@@ -267,6 +267,99 @@ running = True
 foods = []
 effects = []
 
+def main_menu():
+    screen = pygame.display.set_mode((width, height))
+    font = pygame.font.SysFont("Arial", 25)
+
+    button_size = 200, 40
+
+    #play button
+    playbttn_img = pygame.image.load("Play.png")
+    playbttn_img = pygame.transform.scale(playbttn_img, button_size)
+    playbttn_hover_img = pygame.image.load("Play1.png")
+    playbttn_hover_img = pygame.transform.scale(playbttn_hover_img, button_size)
+    playbttn_rect = playbttn_img.get_rect(center=(width // 2, height // 2))
+
+    #about button
+    aboutbttn_img = pygame.image.load("About.png")
+    aboutbttn_img = pygame.transform.scale(aboutbttn_img, button_size)
+    aboutbttn_hover_img = pygame.image.load("About1.png")
+    aboutbttn_hover_img = pygame.transform.scale(aboutbttn_hover_img, button_size)
+    aboutbttn_rect = aboutbttn_img.get_rect(center=(width // 2, height // 2 + 100))
+
+    #exit button
+    exitbttn_img = pygame.image.load("Exit.png")
+    exitbttn_img = pygame.transform.scale(exitbttn_img, button_size)
+    exitbttn_hover_img = pygame.image.load("Exit1.png")
+    exitbttn_hover_img = pygame.transform.scale(exitbttn_hover_img, button_size)
+    exitbttn_rect = exitbttn_img.get_rect(center=(width // 2, height // 2 + 200))
+
+    while True:
+        clock.tick(60)
+
+        success, frame = cap.read()
+        if not success:
+            break
+
+        #screen
+        frame = cv2.flip(frame, 1)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame = pygame.surfarray.make_surface(frame.swapaxes(0, 1))
+        frame = pygame.transform.scale(frame, (width, height))
+        flipped_frame = frame
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+        
+            #play button
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if playbttn_rect.collidepoint(pygame.mouse.get_pos()):
+                    return
+                elif aboutbttn_rect.collidepoint(pygame.mouse.get_pos()):
+                    print("About")
+                elif exitbttn_rect.collidepoint(pygame.mouse.get_pos()):
+                    pygame.quit()
+                    exit()
+
+        screen.fill((0, 0, 0))      # optional background color
+        screen.blit(flipped_frame, (0, 0))  # camera FIRST layer
+        
+        #play button hover
+        mouse_pos_play = pygame.mouse.get_pos()
+
+        if playbttn_rect.collidepoint(mouse_pos_play):
+            current_img = playbttn_hover_img
+        else:
+            current_img = playbttn_img
+
+        screen.blit(current_img, playbttn_rect)
+
+        #about button hover
+        mouse_pos_about = pygame.mouse.get_pos()
+
+        if aboutbttn_rect.collidepoint(mouse_pos_about):
+            current_img = aboutbttn_hover_img
+        else:
+            current_img = aboutbttn_img
+
+        screen.blit(current_img, aboutbttn_rect)
+
+        #exit button hover
+        mouse_pos_about = pygame.mouse.get_pos()
+
+        if exitbttn_rect.collidepoint(mouse_pos_about):
+            current_img = exitbttn_hover_img
+        else:
+            current_img = exitbttn_img
+
+        screen.blit(current_img, exitbttn_rect)
+
+        pygame.display.update()
+
+
+
 # ================= STARTING FOODS =================
 
 # for count in range(9):
@@ -283,6 +376,8 @@ effects = []
 #     else:
 #         foods.append(Food(siopao_frames, "siopao"))
 
+# Main Menu
+main_menu()
 # ================= MAIN GAME LOOP =================
 while running:
 
@@ -310,7 +405,7 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN:
 
             if gameexitbttn_rect.collidepoint(pygame.mouse.get_pos()):
-                running = False
+                main_menu()
 
     #gameexit button hover
     mouse_pos_play = pygame.mouse.get_pos()
@@ -543,13 +638,7 @@ while running:
 
     # ================= BUTTON =================
     screen.blit(current_img, gameexitbttn_rect)
-
-    pygame.draw.rect(
-        screen,
-        (255, 0, 0),
-        gameexitbttn_rect,
-        2
-    )
+    pygame.draw.rect(screen, (255, 0, 0), gameexitbttn_rect, 2)
 
     # ================= HEALTH DISPLAY =================
     if health == 3:
@@ -579,9 +668,10 @@ while running:
         if game_over_time is None:
             game_over_time = pygame.time.get_ticks()
 
-        #3seconds before the program closed
+        #3seconds before going back to main menu
         if pygame.time.get_ticks() - game_over_time >= 3000:
-            running = False
+            main_menu()
+
 
     #draw ground
     pygame.draw.rect(screen, (0, 200, 0), ground_rect)
