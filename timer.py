@@ -405,7 +405,7 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN:
 
             if gameexitbttn_rect.collidepoint(pygame.mouse.get_pos()):
-                main_menu()
+                main_menu() 
 
     #gameexit button hover
     mouse_pos_play = pygame.mouse.get_pos()
