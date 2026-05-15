@@ -433,7 +433,7 @@ while running:
                                 Effect(f.x, f.y, food_sliced)
                             )
 
-                            score += 1
+                            score += 2
 
                         if f.foodtype == "suman":
 
@@ -441,7 +441,7 @@ while running:
                                 Effect(f.x, f.y, food_sliced)
                             )
 
-                            score += 1
+                            score += 3
 
                 cv2.line(frame, p1, p2, (255, 0, 0), 4)
 
