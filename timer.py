@@ -43,7 +43,7 @@ score = 0
 score_img = pygame.image.load("Points, Time.png")
 score_img = pygame.transform.scale(score_img, (200, 50))
 
-# ================= IMPROVED TRAIL CONFIG =================
+# Trail effect variables
 trail_length = 12
 trail_points = []
 
@@ -52,7 +52,7 @@ min_distance = 25
 prev_tip = None
 slice_active = False
 
-# ================= GAME INITIALIZATION =================
+# Pygame setup
 pygame.init()
 screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption("Siopao, Siomai, Suman Slasher")
@@ -80,7 +80,7 @@ cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
-# ================= GIF ANIMATION =================
+# GIF Animation
 def load_gif_frames(path, scale_size=None):
 
     gif = Image.open(path)
@@ -110,13 +110,13 @@ def load_gif_frames(path, scale_size=None):
 
     return frames
 
-# ================= GIF IMAGES =================
+# GIF Images
 siopao_frames = load_gif_frames("Siopao.gif", (100, 100))
 siomai_frames = load_gif_frames("Siomai.gif", (100, 100))
 suman_frames = load_gif_frames("Suman.gif", (100, 100))
 chili_frames = load_gif_frames("Chili.gif", (100, 100))
 
-# ================= GAME EXIT ICON =================
+# Game exit button
 gameexitbttn_img = pygame.image.load("Gameexit.png").convert_alpha()
 gameexitbttn_img = pygame.transform.scale(gameexitbttn_img, (50, 50))
 
@@ -124,7 +124,7 @@ gameexitbttn_hover_img = pygame.image.load("Gameexit1.png").convert_alpha()
 gameexitbttn_hover_img = pygame.transform.scale(gameexitbttn_hover_img, (50, 50))
 gameexitbttn_rect = gameexitbttn_img.get_rect(topleft=(1, 1))
 
-# ================= HEALTH ICON =================
+# Health icons
 healthicon_img = pygame.image.load("Health.png")
 healthicon_img = pygame.transform.scale(healthicon_img, (50, 50))
 healthicon_rect = healthicon_img.get_rect(topright=(width, 0))
@@ -137,7 +137,7 @@ healthicon2_img = pygame.image.load("Health.png")
 healthicon2_img = pygame.transform.scale(healthicon2_img, (50, 50))
 healthicon2_rect = healthicon2_img.get_rect(topright=(width - 100, 0))
 
-# ================= DAMAGE ICON =================
+# Damage icons
 damageicon_img = pygame.image.load("Damage.png")
 damageicon_img = pygame.transform.scale(damageicon_img, (50, 50))
 damageicon_rect = damageicon_img.get_rect(topright=(width, 0))
@@ -150,11 +150,11 @@ damageicon2_img = pygame.image.load("Damage.png")
 damageicon2_img = pygame.transform.scale(damageicon2_img, (50, 50))
 damageicon2_rect = damageicon2_img.get_rect(topright=(width - 100, 0))
 
-# ================= SLICED GIF ANIMATION =================
+# Sliced GIF Animations
 chili_sliced = load_gif_frames("Chili slashed.gif", (100, 100))
 food_sliced = load_gif_frames("Food sliced.gif", (100, 100))
 
-# ================= FOOD CLASS =================
+# Food Class
 class Food:
 
     def __init__(self, frames, foodtype):
@@ -207,7 +207,7 @@ class Food:
 def point_circle_collision(point, circle_center, radius):
     return math.hypot(point[0] - circle_center[0], point[1] - circle_center[1]) <= radius
 
-# ================= IMPROVED COLLISION =================
+# Collision detection between a line segment and a circle
 def segment_circle_intersection(p1, p2, center, radius):
 
     x1, y1 = p1
@@ -231,7 +231,7 @@ def segment_circle_intersection(p1, p2, center, radius):
 
     return distance <= radius
 
-# ================= EFFECT CLASS =================
+# Effect class for sliced animation
 class Effect:
 
     def __init__(self, x, y, frames):
@@ -261,7 +261,7 @@ class Effect:
     def draw(self, screen):
         screen.blit(self.image, self.rect)
 
-# ================= MAIN VARIABLES =================
+# Main Game Variables
 current_index_tips = []
 prev_index_tips = []
 
@@ -363,7 +363,7 @@ def main_menu():
 
 
 
-# ================= STARTING FOODS =================
+# Starting Food
 
 # for count in range(9):
 
@@ -381,7 +381,7 @@ def main_menu():
 
 # Main Menu
 main_menu()
-# ================= MAIN GAME LOOP =================
+# Main Game Loop
 while running:
 
     dt = clock.tick(fps)
@@ -399,7 +399,7 @@ while running:
         if effect.finished:
             effects.remove(effect)
 
-    #gameexit button
+    #game exit button
     for event in pygame.event.get():
 
         if event.type == pygame.QUIT:
@@ -410,7 +410,7 @@ while running:
             if gameexitbttn_rect.collidepoint(pygame.mouse.get_pos()):
                 main_menu() 
 
-    #gameexit button hover
+    #game exit button hover
     mouse_pos_play = pygame.mouse.get_pos()
 
     if gameexitbttn_rect.collidepoint(mouse_pos_play):
@@ -425,10 +425,7 @@ while running:
 
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    mp_image = mp.Image(
-        image_format=mp.ImageFormat.SRGB,
-        data=rgb
-    )
+    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
 
     result = detector.detect(mp_image)
 
@@ -437,10 +434,29 @@ while running:
     slice_active = False
 
     if result.hand_landmarks:
+        # Get the largest hand only
+        largest_hand = None
+        largest_area = 0
 
         for hand_landmarks in result.hand_landmarks:
+            xs = [lm.x for lm in hand_landmarks]
+            ys = [lm.y for lm in hand_landmarks]
 
-            index_tip = hand_landmarks[8]
+            hand_width = (max(xs) - min(xs)) * w
+            hand_height = (max(ys) - min(ys)) * h
+
+            area = hand_width * hand_height
+
+            if area > largest_area:
+                largest_area = area
+                largest_hand = hand_landmarks
+
+        # minimum hand size threshold
+        MIN_HAND_AREA = 25000 
+
+        if largest_hand and largest_area > MIN_HAND_AREA:
+
+            index_tip = largest_hand[8]
 
             x = int(index_tip.x * w)
             y = int(index_tip.y * h)
@@ -450,20 +466,16 @@ while running:
             # trail effect
             trail_points.append(((x, y), now_ms()))
 
-            # movement detection improvement
+            # movement detection
             if prev_tip is not None:
-
-                dist = math.hypot(
-                    x - prev_tip[0],
-                    y - prev_tip[1]
-                )
+                dist = math.hypot(x - prev_tip[0], y - prev_tip[1])
 
                 if dist >= min_distance and len(trail_points) >= 3:
                     slice_active = True
 
             prev_tip = (x, y)
 
-            cv2.circle(frame, (x, y), 10, (0, 255, 0), -1)
+            cv2.circle(frame, (x, y), 11, (255, 180, 0), -1)
 
     # remove old trail points
     trail_points = [
@@ -542,7 +554,7 @@ while running:
 
                             score += 3
 
-                cv2.line(frame, p1, p2, (255, 0, 0), 4)
+                # cv2.line(frame, p1, p2, (255, 0, 0), 4) 
 
     # Update previous positions
     prev_index_tips = current_index_tips.copy()
@@ -605,10 +617,7 @@ while running:
     # ================= TRAIL DRAW =================
     if len(trail_points) > 1:
 
-        trail_surface = pygame.Surface(
-            (width, height),
-            pygame.SRCALPHA
-        )
+        trail_surface = pygame.Surface((width, height),pygame.SRCALPHA)
 
         for i in range(1, len(trail_points)):
 
@@ -626,7 +635,7 @@ while running:
 
             thickness = max(
                 1,
-                int(12 * life_ratio)
+                int(13 * life_ratio)
             )
 
             pygame.draw.line(
