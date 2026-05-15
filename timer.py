@@ -204,6 +204,9 @@ class Food:
 
         self.image = self.frames[int(self.frame_index)]
 
+def point_circle_collision(point, circle_center, radius):
+    return math.hypot(point[0] - circle_center[0], point[1] - circle_center[1]) <= radius
+
 # ================= IMPROVED COLLISION =================
 def segment_circle_intersection(p1, p2, center, radius):
 
@@ -501,7 +504,7 @@ while running:
                         p1,
                         p2,
                         (f.x, f.y),
-                        f.radius
+                        f.radius + 25
                     ):
 
                         f.sliced = True
