@@ -21,7 +21,7 @@ intial_vy_min, intial_vy_max = 12, 18
 particle_longevity_ms = 700
 
 #max food items on screen at once, to prevent lag
-max_food = 9
+max_food = 5
 
 #food dispawning area
 rect_x = 0
@@ -268,19 +268,20 @@ foods = []
 effects = []
 
 # ================= STARTING FOODS =================
-for count in range(9):
 
-    if count % 4 == 0:
-        foods.append(Food(chili_frames, "chili"))
+# for count in range(9):
 
-    elif count % 3 == 0:
-        foods.append(Food(suman_frames, "suman"))
+#     if count % 4 == 0:
+#         foods.append(Food(chili_frames, "chili"))
 
-    elif count % 2 == 0:
-        foods.append(Food(siomai_frames, "siomai"))
+#     elif count % 3 == 0:
+#         foods.append(Food(suman_frames, "suman"))
 
-    else:
-        foods.append(Food(siopao_frames, "siopao"))
+#     elif count % 2 == 0:
+#         foods.append(Food(siomai_frames, "siomai"))
+
+#     else:
+#         foods.append(Food(siopao_frames, "siopao"))
 
 # ================= MAIN GAME LOOP =================
 while running:
@@ -451,10 +452,9 @@ while running:
     # ================= FOOD SPAWN =================
     # TO EDIT
     spawn_timer += dt
+    if health != 0 and spawn_timer >= spawn_interval and len(foods) < 5:
 
-    if health > 0  and spawn_timer >= spawn_interval:
-
-        if len(foods) < max_food:
+        if len(foods) <= max_food:
 
             rand = random.randint(1, 20)
 
