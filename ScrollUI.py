@@ -357,7 +357,6 @@ def about_screen():
         else:
             current_img = gameexitbttn_img
 
-            
         # camera
         success, frame = cap.read()
 
