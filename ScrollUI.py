@@ -271,7 +271,7 @@ foods = []
 effects = []
 
 
-# about screen
+#about screen
 def about_screen():
 
     # Load scroll frames
@@ -353,7 +353,7 @@ def about_screen():
 
         if gameexitbttn_rect.collidepoint(mouse_pos_play):
             current_img = gameexitbttn_hover_img
-            
+
         else:
             current_img = gameexitbttn_img
 
@@ -551,9 +551,6 @@ def main_menu():
         screen.blit(current_img, exitbttn_rect)
 
         pygame.display.update()
-
-
-
 
 # Starting Food
 
