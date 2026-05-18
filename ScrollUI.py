@@ -278,18 +278,18 @@ def about_screen():
     scroll_frames = [
 
         pygame.transform.scale(
-            pygame.image.load("Play.png").convert_alpha(),
-            (700, 500)
+            pygame.image.load("Scroll1.png").convert_alpha(),
+            (1200, 700)
         ),
 
         pygame.transform.scale(
-            pygame.image.load("About.png").convert_alpha(),
-            (700, 500)
+            pygame.image.load("Scroll2.png").convert_alpha(),
+            (1200, 700)
         ),
 
         pygame.transform.scale(
-            pygame.image.load("Exit.png").convert_alpha(),
-            (700, 500)
+            pygame.image.load("Scroll3.png").convert_alpha(),
+            (1200, 700)
         )
     ]
 
