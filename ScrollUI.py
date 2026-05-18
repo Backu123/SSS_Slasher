@@ -341,12 +341,13 @@ def about_screen():
         for event in pygame.event.get():
 
             if event.type == pygame.QUIT:
-                running = False
+                pygame.quit()
+                exit()
 
             if event.type == pygame.MOUSEBUTTONDOWN:
 
                 if gameexitbttn_rect.collidepoint(pygame.mouse.get_pos()):
-                    main_menu() 
+                    return
 
         #game exit button hover
         mouse_pos_play = pygame.mouse.get_pos()
