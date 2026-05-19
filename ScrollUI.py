@@ -6,7 +6,14 @@ from mediapipe.tasks.python import vision
 import pygame
 import random
 import math
+import psycopg2
 from PIL import Image
+
+# Database connection
+DB_URL = "postgresql://neondb_owner:npg_yAHXZ0iM8ORI@ep-proud-haze-ao93abr3-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+conn = psycopg2.connect(DB_URL)
+cursor = conn.cursor()
+
 
 #Configs
 width, height = 1280, 720
@@ -82,6 +89,41 @@ detector = vision.HandLandmarker.create_from_options(options)
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
+# Database
+
+def init_db():
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS leaderboards (
+            id SERIAL PRIMARY KEY,
+            username TEXT,
+            score INT,
+            game_time TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+
+init_db()
+
+def save_score(username, score, game_time):
+    cursor.execute("""
+        INSERT INTO leaderboards (username, score, game_time)
+        VALUES (%s, %s, %s)
+    """, (username, score, game_time))
+
+    conn.commit()
+
+def get_leaderboard():
+    cursor.execute("""
+        SELECT username, score, game_time, created_at
+        FROM leaderboards
+        ORDER BY score DESC, created_at ASC
+        LIMIT 10
+    """)
+
+    return cursor.fetchall()
+
 
 # GIF Animation
 def load_gif_frames(path, scale_size=None):
@@ -991,6 +1033,7 @@ while running:
 
         #2seconds before going back to main menu
         if pygame.time.get_ticks() - game_over_time >= 2000:
+            save_score("Player1", score, final_time)
             game_timer = 0
             health = 3
             score = 0
