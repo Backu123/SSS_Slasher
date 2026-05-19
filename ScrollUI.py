@@ -339,7 +339,6 @@ def about_screen():
         )
     ]
 
-    
     # About text
     pages = [
     [
@@ -366,7 +365,12 @@ def about_screen():
     ],
 
     [
-        " Developers "
+        " Developers ",
+        "Audije, Timothy Rayjell",
+        "Bermillo, Franzen Edhrian Kirby",
+        "Capistrano, John Wayne",
+        "Cristobal, Leilanie Alaine",
+        "Teves, Jamaica"
     ]
     ]
 
@@ -580,7 +584,7 @@ def about_screen():
         if current_page > 0:
             screen.blit(current_back_img, backscrollbttn_rect)
             pygame.draw.rect(screen, (255, 0, 0), backscrollbttn_rect, 2)
-
+        
         pygame.draw.rect(screen, (255, 0, 0), gameexitbttn_rect, 2)
 
         pygame.display.update()
