@@ -302,7 +302,8 @@ def about_screen():
     [
         " About ",
         "SSS Slasher is a fast-paced arcade slicing game where players use their hands as blades",
-        "through camera-based hand detection. Slash flying foods, score points, and avoid chilis in this computer vision-powered game."
+        "through camera-based hand detection. Slash flying foods, score points, and avoid chilis",
+        "in this computer vision-powered game."
     ],
 
     [
@@ -502,9 +503,10 @@ def about_screen():
             for line in pages[current_page]:
 
                 if line in [
-                    "Siopao, Siomai, Suman Slasher",
-                    "How To Play",
-                    "Developers"
+                    " About ",
+                    " How to play ",
+                    " How it works ",
+                    " Developers "
                 ]:
                     text_surface = title_font.render(
                         line,
