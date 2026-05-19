@@ -30,6 +30,9 @@ rect_width = width
 rect_height = 1
 ground_rect = pygame.Rect(rect_x, rect_y, rect_width, rect_height)
 
+# Game timer (increment)
+game_timer = 0
+
 #health
 health = 3
 
@@ -575,6 +578,14 @@ while running:
 
     dt = clock.tick(fps)
 
+    # timer seconds 
+    game_timer += dt
+    total_seconds = game_timer // 1000 # convert milliseconds to seconds
+    game_timer_minutes = total_seconds // 60
+    game_timer_seconds = total_seconds % 60
+    final_time = f"{game_timer_minutes:02.0f}:{game_timer_seconds%60:02.0f}"
+
+
     success, frame = cap.read()
 
     if not success:
@@ -597,7 +608,13 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN:
 
             if gameexitbttn_rect.collidepoint(pygame.mouse.get_pos()):
-                main_menu() 
+                game_timer = 0
+                health = 3
+                score = 0
+                print("Returning to Main Menu...")
+                print(f"Final Time: {final_time}")
+                print(f"Final Score: {score}")
+                main_menu()
 
     #game exit button hover
     mouse_pos_play = pygame.mouse.get_pos()
@@ -856,24 +873,7 @@ while running:
         screen.blit(damageicon_img, damageicon_rect)
         screen.blit(damageicon1_img, damageicon1_rect)
         screen.blit(healthicon2_img, healthicon2_rect)
-
-    if health == 0:
-
-        foods.clear()
-
-        screen.blit(damageicon_img, damageicon_rect)
-        screen.blit(damageicon1_img, damageicon1_rect)
-        screen.blit(damageicon2_img, damageicon2_rect)
-
-        #gameover
-        if game_over_time is None:
-            game_over_time = pygame.time.get_ticks()
-
-        #3seconds before going back to main menu
-        if pygame.time.get_ticks() - game_over_time >= 3000:
-            main_menu()
-
-
+    
     #draw ground
     pygame.draw.rect(screen, (0, 200, 0), ground_rect)
 
@@ -907,6 +907,33 @@ while running:
     screen.blit(score_img, (100, 5))
     screen.blit(score_text, (120, 15))
 
+    # Timer display
+    timer_text = font.render(f"{game_timer_minutes:02.0f}:{game_timer_seconds%60:02.0f}", True, (255, 255, 255))
+    screen.blit(timer_text, (screen.get_width() // 2 - timer_text.get_width() // 2, 15))
+
+    if health == 0:
+
+        foods.clear()
+
+        screen.blit(damageicon_img, damageicon_rect)
+        screen.blit(damageicon1_img, damageicon1_rect)
+        screen.blit(damageicon2_img, damageicon2_rect)
+
+        #gameover
+        if game_over_time is None:
+            game_over_time = pygame.time.get_ticks()
+
+        #2seconds before going back to main menu
+        if pygame.time.get_ticks() - game_over_time >= 2000:
+            game_timer = 0
+            health = 3
+            score = 0
+            print("Game Over! Returning to Main Menu...")
+            print(f"Final Time: {final_time}")
+            print(f"Final Score: {score}")
+            main_menu()
+
+        
     pygame.display.update()
 
 # ================= CLEANUP =================
