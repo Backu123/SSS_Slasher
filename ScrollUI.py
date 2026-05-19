@@ -104,6 +104,8 @@ def init_db():
     """)
     conn.commit()
 
+init_db()
+
 def save_score(username, score, game_time):
     cursor.execute("""
         INSERT INTO leaderboards (username, score, game_time)
@@ -679,7 +681,6 @@ main_menu()
 while running:
 
     dt = clock.tick(fps)
-    init_db()
 
     # timer seconds 
     game_timer += dt
