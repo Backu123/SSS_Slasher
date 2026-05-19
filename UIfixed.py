@@ -584,6 +584,10 @@ def main_menu():
 
     button_size = 200, 40
 
+    namelogo_img= pygame.image.load("NameLogo.png")
+    namelogo_img= pygame.transform.scale(namelogo_img, (400, 320))
+    namelogo_rect = namelogo_img.get_rect(center = (640, 170))
+
     #play button
     playbttn_img = pygame.image.load("Play.png")
     playbttn_img = pygame.transform.scale(playbttn_img, button_size)
@@ -666,6 +670,8 @@ def main_menu():
             current_img = exitbttn_img
 
         screen.blit(current_img, exitbttn_rect)
+
+        screen.blit(namelogo_img, namelogo_rect)
 
         pygame.display.update()
 
