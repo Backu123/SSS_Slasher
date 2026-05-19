@@ -452,7 +452,7 @@ while running:
                 largest_hand = hand_landmarks
 
         # minimum hand size threshold
-        MIN_HAND_AREA = 25000 
+        MIN_HAND_AREA = 25000
 
         if largest_hand and largest_area > MIN_HAND_AREA:
 
