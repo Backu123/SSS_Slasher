@@ -99,6 +99,7 @@ def init_db():
             username TEXT,
             score INT,
             game_time TEXT,
+            game_time_seconds INT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -106,17 +107,17 @@ def init_db():
 
 init_db()
 
-def save_score(username, score, game_time):
+def save_score(username, score, game_time, game_time_seconds):
     cursor.execute("""
-        INSERT INTO leaderboards (username, score, game_time)
-        VALUES (%s, %s, %s)
-    """, (username, score, game_time))
+        INSERT INTO leaderboards (username, score, game_time, game_time_seconds)
+        VALUES (%s, %s, %s, %s)
+    """, (username, score, game_time, game_time_seconds))
 
     conn.commit()
 
 def get_leaderboard():
     cursor.execute("""
-        SELECT username, score, game_time, created_at
+        SELECT username, score, game_time
         FROM leaderboards
         ORDER BY score DESC, created_at ASC
         LIMIT 10
@@ -1029,7 +1030,7 @@ while running:
 
         #2seconds before going back to main menu
         if pygame.time.get_ticks() - game_over_time >= 2000:
-            save_score("Player1", score, final_time)
+            save_score("Timothy", score, final_time, total_seconds)
             game_timer = 0
             health = 3
             score = 0
