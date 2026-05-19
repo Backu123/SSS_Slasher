@@ -393,7 +393,7 @@ def about_screen():
     nextscrollbttn_hover_img = pygame.image.load("Next1.png").convert_alpha()
     nextscrollbttn_hover_img = pygame.transform.scale(nextscrollbttn_hover_img, (50, 50))
 
-    nextscrollbttn_rect = nextscrollbttn_img.get_rect(center= (680, 700))
+    nextscrollbttn_rect = nextscrollbttn_img.get_rect(center= (680, 670))
 
     #back scroll page button
     backscrollbttn_img = pygame.image.load("Back.png").convert_alpha()
@@ -402,9 +402,9 @@ def about_screen():
     backscrollbttn_hover_img = pygame.image.load("Back1.png").convert_alpha()
     backscrollbttn_hover_img = pygame.transform.scale(backscrollbttn_hover_img, (50, 50))
 
-    backscrollbttn_rect = backscrollbttn_img.get_rect(center= (600, 700))
+    backscrollbttn_rect = backscrollbttn_img.get_rect(center= (600, 670))
 
-     # FIX: initialize current images (IMPORTANT)
+    # FIX: initialize current images (IMPORTANT)
     current_next_img = nextscrollbttn_img
     current_back_img = backscrollbttn_img
     current_exit_img = gameexitbttn_img
