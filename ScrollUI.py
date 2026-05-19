@@ -296,7 +296,39 @@ def about_screen():
         )
     ]
 
+    
+    # About text
+    pages = [
+    [
+        " About ",
+        "SSS Slasher is a fast-paced arcade slicing game where players use their hands as blades",
+        "through camera-based hand detection. Slash flying foods, score points, and avoid chilis in this computer vision-powered game."
+    ],
+
+    [
+        " How to play ",
+        "The goal of the game is to slice as much food and earn points by doing so.",
+        "Slicing three chilis will eliminate the player."
+    ],
+
+    [
+        " How it works ",
+        "- The player will be showing his hand to the camera. It will act as blade in the",
+        "game and the player can use it by moving it in a slicing motion to the food.",
+        "- Foods such as siomai, siopao and suman will start popping up from the bottom of the screen.",
+        "- The player must slice as much food and avoid chilis.",
+        "- The player won't lose a health if a food is not sliced, only when a chili is sliced.",
+        "- Score as much points and avoid chilis!"
+    ],
+
+    [
+        " Developers "
+    ]
+    ]
+
     # Animation variables
+    current_page = 0
+
     current_frame = 0
     frame_timer = 0
     frame_delay = 12
@@ -307,21 +339,21 @@ def about_screen():
     title_font = pygame.font.SysFont("Times New Roman", 48)
     text_font = pygame.font.SysFont("Arial", 28)
 
-    # About text
-    about_lines = [
+    #next scroll page button
+    nextscrollbttn_img = pygame.image.load("Gameexit.png").convert_alpha()
+    nextscrollbttn_img = pygame.transform.scale(nextscrollbttn_img, (50, 50))
 
-        "Siopao, Siomai, Suman Slasher",
+    nextscrollbttn_hover_img = pygame.image.load("Gameexit1.png").convert_alpha()
+    nextscrollbttn_hover_img = pygame.transform.scale(nextscrollbttn_hover_img, (50, 50))
+    nextscrollbttn_rect = nextscrollbttn_img.get_rect(center= (680, 700))
 
-        "",
+    #back scroll page button
+    backscrollbttn_img = pygame.image.load("Gameexit.png").convert_alpha()
+    backscrollbttn_img = pygame.transform.scale(backscrollbttn_img, (50, 50))
 
-        "A Filipino inspired slicing game",
-
-        "that uses hand tracking technology.",
-
-        "",
-
-        "Slice foods and avoid chili!"
-    ]
+    backscrollbttn_hover_img = pygame.image.load("Gameexit1.png").convert_alpha()
+    backscrollbttn_hover_img = pygame.transform.scale(backscrollbttn_hover_img, (50, 50))
+    backscrollbttn_rect = backscrollbttn_img.get_rect(center= (600, 700))
 
     while True:
 
@@ -351,15 +383,58 @@ def about_screen():
 
                 if gameexitbttn_rect.collidepoint(pygame.mouse.get_pos()):
                     return
+                
+                if nextscrollbttn_rect.collidepoint(
+                    pygame.mouse.get_pos()
+                ):
+
+                    if current_page < len(pages) - 1:
+
+                        # Go next page
+                        current_page += 1
+
+                        # Restart animation
+                        current_frame = 0
+                        frame_timer = 0
+                        animation_done = False
+
+                if backscrollbttn_rect.collidepoint(
+                    pygame.mouse.get_pos()
+                ):
+
+                    if current_page > 0:
+
+                        # Go next page
+                        current_page -= 1
+
+                        # Restart animation
+                        current_frame = 0
+                        frame_timer = 0
+                        animation_done = False
+
 
         #game exit button hover
         mouse_pos_play = pygame.mouse.get_pos()
 
         if gameexitbttn_rect.collidepoint(mouse_pos_play):
-            current_img = gameexitbttn_hover_img
+            current_exit_img = gameexitbttn_hover_img
 
         else:
-            current_img = gameexitbttn_img
+            current_exit_img = gameexitbttn_img
+
+        #next scroll hover button
+        if nextscrollbttn_rect.collidepoint(mouse_pos_play):
+            current_next_img = nextscrollbttn_hover_img
+
+        else:
+            current_next_img = nextscrollbttn_img
+
+        #back scroll hover button
+        if backscrollbttn_rect.collidepoint(mouse_pos_play):
+            current_back_img = backscrollbttn_hover_img
+
+        else:
+            current_back_img = backscrollbttn_img
 
         # camera
         success, frame = cap.read()
@@ -424,10 +499,13 @@ def about_screen():
 
             y = 190
 
-            for line in about_lines:
+            for line in pages[current_page]:
 
-                if line == "Siopao, Siomai, Suman Slasher":
-
+                if line in [
+                    "Siopao, Siomai, Suman Slasher",
+                    "How To Play",
+                    "Developers"
+                ]:
                     text_surface = title_font.render(
                         line,
                         True,
@@ -450,17 +528,15 @@ def about_screen():
 
                 y += 50
 
-        screen.blit(current_img, gameexitbttn_rect)
+        screen.blit(current_exit_img, gameexitbttn_rect)
+        if current_page < len(pages) - 1:
+            screen.blit(current_next_img, nextscrollbttn_rect)
+            pygame.draw.rect(screen, (255, 0, 0), nextscrollbttn_rect, 2)
+        if current_page > 0:
+            screen.blit(current_back_img, backscrollbttn_rect)
+            pygame.draw.rect(screen, (255, 0, 0), backscrollbttn_rect, 2)
+
         pygame.draw.rect(screen, (255, 0, 0), gameexitbttn_rect, 2)
-
-        # # Exit text
-        # exit_text = text_font.render(
-        #     "Press ESC to return",
-        #     True,
-        #     (255, 255, 255)
-        # )
-
-        # screen.blit(exit_text, (40, 40))
 
         pygame.display.update()
 
@@ -554,22 +630,6 @@ def main_menu():
         screen.blit(current_img, exitbttn_rect)
 
         pygame.display.update()
-
-# Starting Food
-
-# for count in range(9):
-
-#     if count % 4 == 0:
-#         foods.append(Food(chili_frames, "chili"))
-
-#     elif count % 3 == 0:
-#         foods.append(Food(suman_frames, "suman"))
-
-#     elif count % 2 == 0:
-#         foods.append(Food(siomai_frames, "siomai"))
-
-#     else:
-#         foods.append(Food(siopao_frames, "siopao"))
 
 # Main Menu
 main_menu()
