@@ -413,19 +413,6 @@ def about_screen():
 
         clock.tick(60)
 
-        # events, exit back to main menu
-        # for event in pygame.event.get():
-
-            # if event.type == pygame.QUIT:
-            #     pygame.quit()
-            #     exit()
-
-            # # Exit About Screen
-            # if event.type == pygame.KEYDOWN:
-
-            #     if event.key == pygame.K_ESCAPE:
-            #         return
-
         #game exit button
         for event in pygame.event.get():
 
