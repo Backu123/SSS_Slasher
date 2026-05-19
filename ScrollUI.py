@@ -21,7 +21,7 @@ intial_vy_min, intial_vy_max = 12, 18
 particle_longevity_ms = 700
 
 #max food items on screen at once, to prevent lag
-max_food = 9
+max_food = 5
 
 #food dispawning area
 rect_x = 0
@@ -43,7 +43,7 @@ score = 0
 score_img = pygame.image.load("Points, Time.png")
 score_img = pygame.transform.scale(score_img, (200, 50))
 
-# ================= IMPROVED TRAIL CONFIG =================
+# Trail effect variables
 trail_length = 12
 trail_points = []
 
@@ -52,13 +52,13 @@ min_distance = 25
 prev_tip = None
 slice_active = False
 
-# ================= GAME INITIALIZATION =================
+# Pygame setup
 pygame.init()
 screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption("Siopao, Siomai, Suman Slasher")
 clock = pygame.time.Clock()
 spawn_timer = 0
-spawn_interval = 500
+spawn_interval = 250
 font = pygame.font.SysFont("Arial", 25)
 
 def now_ms():
@@ -80,7 +80,7 @@ cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
-# ================= GIF ANIMATION =================
+# GIF Animation
 def load_gif_frames(path, scale_size=None):
 
     gif = Image.open(path)
@@ -110,13 +110,13 @@ def load_gif_frames(path, scale_size=None):
 
     return frames
 
-# ================= GIF IMAGES =================
+# GIF Images
 siopao_frames = load_gif_frames("Siopao.gif", (100, 100))
 siomai_frames = load_gif_frames("Siomai.gif", (100, 100))
 suman_frames = load_gif_frames("Suman.gif", (100, 100))
 chili_frames = load_gif_frames("Chili.gif", (100, 100))
 
-# ================= GAME EXIT ICON =================
+# Game exit button
 gameexitbttn_img = pygame.image.load("Gameexit.png").convert_alpha()
 gameexitbttn_img = pygame.transform.scale(gameexitbttn_img, (50, 50))
 
@@ -124,7 +124,7 @@ gameexitbttn_hover_img = pygame.image.load("Gameexit1.png").convert_alpha()
 gameexitbttn_hover_img = pygame.transform.scale(gameexitbttn_hover_img, (50, 50))
 gameexitbttn_rect = gameexitbttn_img.get_rect(topleft=(1, 1))
 
-# ================= HEALTH ICON =================
+# Health icons
 healthicon_img = pygame.image.load("Health.png")
 healthicon_img = pygame.transform.scale(healthicon_img, (50, 50))
 healthicon_rect = healthicon_img.get_rect(topright=(width, 0))
@@ -137,7 +137,7 @@ healthicon2_img = pygame.image.load("Health.png")
 healthicon2_img = pygame.transform.scale(healthicon2_img, (50, 50))
 healthicon2_rect = healthicon2_img.get_rect(topright=(width - 100, 0))
 
-# ================= DAMAGE ICON =================
+# Damage icons
 damageicon_img = pygame.image.load("Damage.png")
 damageicon_img = pygame.transform.scale(damageicon_img, (50, 50))
 damageicon_rect = damageicon_img.get_rect(topright=(width, 0))
@@ -150,11 +150,11 @@ damageicon2_img = pygame.image.load("Damage.png")
 damageicon2_img = pygame.transform.scale(damageicon2_img, (50, 50))
 damageicon2_rect = damageicon2_img.get_rect(topright=(width - 100, 0))
 
-# ================= SLICED GIF ANIMATION =================
+# Sliced GIF Animations
 chili_sliced = load_gif_frames("Chili slashed.gif", (100, 100))
 food_sliced = load_gif_frames("Food sliced.gif", (100, 100))
 
-# ================= FOOD CLASS =================
+# Food Class
 class Food:
 
     def __init__(self, frames, foodtype):
@@ -204,7 +204,10 @@ class Food:
 
         self.image = self.frames[int(self.frame_index)]
 
-# ================= IMPROVED COLLISION =================
+def point_circle_collision(point, circle_center, radius):
+    return math.hypot(point[0] - circle_center[0], point[1] - circle_center[1]) <= radius
+
+# Collision detection between a line segment and a circle
 def segment_circle_intersection(p1, p2, center, radius):
 
     x1, y1 = p1
@@ -228,7 +231,7 @@ def segment_circle_intersection(p1, p2, center, radius):
 
     return distance <= radius
 
-# ================= EFFECT CLASS =================
+# Effect class for sliced animation
 class Effect:
 
     def __init__(self, x, y, frames):
@@ -258,7 +261,7 @@ class Effect:
     def draw(self, screen):
         screen.blit(self.image, self.rect)
 
-# ================= MAIN VARIABLES =================
+# Main Game Variables
 current_index_tips = []
 prev_index_tips = []
 
@@ -267,22 +270,307 @@ running = True
 foods = []
 effects = []
 
-# ================= STARTING FOODS =================
-for count in range(9):
 
-    if count % 4 == 0:
-        foods.append(Food(chili_frames, "chili"))
+#about screen
+def about_screen():
 
-    elif count % 3 == 0:
-        foods.append(Food(suman_frames, "suman"))
+    # Load scroll frames
+    scroll_frames = [
 
-    elif count % 2 == 0:
-        foods.append(Food(siomai_frames, "siomai"))
+        pygame.transform.scale(
+            pygame.image.load("Scroll1.png").convert_alpha(),
+            (1200, 700)
+        ),
 
-    else:
-        foods.append(Food(siopao_frames, "siopao"))
+        pygame.transform.scale(
+            pygame.image.load("Scroll2.png").convert_alpha(),
+            (1200, 700)
+        ),
 
-# ================= MAIN GAME LOOP =================
+        pygame.transform.scale(
+            pygame.image.load("Scroll3.png").convert_alpha(),
+            (1200, 700)
+        )
+    ]
+
+    # Animation variables
+    current_frame = 0
+    frame_timer = 0
+    frame_delay = 12
+
+    animation_done = False
+
+    # Fonts
+    title_font = pygame.font.SysFont("Times New Roman", 48)
+    text_font = pygame.font.SysFont("Arial", 28)
+
+    # About text
+    about_lines = [
+
+        "Siopao, Siomai, Suman Slasher",
+
+        "",
+
+        "A Filipino inspired slicing game",
+
+        "that uses hand tracking technology.",
+
+        "",
+
+        "Slice foods and avoid chili!"
+    ]
+
+    while True:
+
+        clock.tick(60)
+
+        # events, exit back to main menu
+        # for event in pygame.event.get():
+
+            # if event.type == pygame.QUIT:
+            #     pygame.quit()
+            #     exit()
+
+            # # Exit About Screen
+            # if event.type == pygame.KEYDOWN:
+
+            #     if event.key == pygame.K_ESCAPE:
+            #         return
+
+        #game exit button
+        for event in pygame.event.get():
+
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+
+                if gameexitbttn_rect.collidepoint(pygame.mouse.get_pos()):
+                    return
+
+        #game exit button hover
+        mouse_pos_play = pygame.mouse.get_pos()
+
+        if gameexitbttn_rect.collidepoint(mouse_pos_play):
+            current_img = gameexitbttn_hover_img
+
+        else:
+            current_img = gameexitbttn_img
+
+        # camera
+        success, frame = cap.read()
+
+        if not success:
+            break
+
+        frame = cv2.flip(frame, 1)
+
+        frame = cv2.cvtColor(
+            frame,
+            cv2.COLOR_BGR2RGB
+        )
+
+        frame = pygame.surfarray.make_surface(
+            frame.swapaxes(0, 1)
+        )
+
+        frame = pygame.transform.scale(
+            frame,
+            (width, height)
+        )
+
+        # draw camera
+        screen.blit(frame, (0, 0))
+
+        # Dark overlay
+        overlay = pygame.Surface((width, height))
+        overlay.set_alpha(120)
+        overlay.fill((0, 0, 0))
+
+        screen.blit(overlay, (0, 0))
+
+        # scroll animation
+        if not animation_done:
+
+            frame_timer += 1
+
+            if frame_timer >= frame_delay:
+
+                current_frame += 1
+
+                frame_timer = 0
+
+                if current_frame >= len(scroll_frames):
+
+                    current_frame = len(scroll_frames) - 1
+
+                    animation_done = True
+
+        # Draw current frame
+        scroll_img = scroll_frames[current_frame]
+
+        scroll_rect = scroll_img.get_rect(
+            center=(width // 2, height // 2)
+        )
+
+        screen.blit(scroll_img, scroll_rect)
+
+        # ================= SHOW TEXT =================
+        if animation_done:
+
+            y = 190
+
+            for line in about_lines:
+
+                if line == "Siopao, Siomai, Suman Slasher":
+
+                    text_surface = title_font.render(
+                        line,
+                        True,
+                        (70, 35, 10)
+                    )
+
+                else:
+
+                    text_surface = text_font.render(
+                        line,
+                        True,
+                        (70, 35, 10)
+                    )
+
+                text_rect = text_surface.get_rect(
+                    center=(width // 2, y)
+                )
+
+                screen.blit(text_surface, text_rect)
+
+                y += 50
+
+        screen.blit(current_img, gameexitbttn_rect)
+        pygame.draw.rect(screen, (255, 0, 0), gameexitbttn_rect, 2)
+
+        # # Exit text
+        # exit_text = text_font.render(
+        #     "Press ESC to return",
+        #     True,
+        #     (255, 255, 255)
+        # )
+
+        # screen.blit(exit_text, (40, 40))
+
+        pygame.display.update()
+
+def main_menu():
+    screen = pygame.display.set_mode((width, height))
+    font = pygame.font.SysFont("Arial", 25)
+
+    button_size = 200, 40
+
+    #play button
+    playbttn_img = pygame.image.load("Play.png")
+    playbttn_img = pygame.transform.scale(playbttn_img, button_size)
+    playbttn_hover_img = pygame.image.load("Play1.png")
+    playbttn_hover_img = pygame.transform.scale(playbttn_hover_img, button_size)
+    playbttn_rect = playbttn_img.get_rect(center=(width // 2, height // 2))
+
+    #about button
+    aboutbttn_img = pygame.image.load("About.png")
+    aboutbttn_img = pygame.transform.scale(aboutbttn_img, button_size)
+    aboutbttn_hover_img = pygame.image.load("About1.png")
+    aboutbttn_hover_img = pygame.transform.scale(aboutbttn_hover_img, button_size)
+    aboutbttn_rect = aboutbttn_img.get_rect(center=(width // 2, height // 2 + 100))
+
+    #exit button
+    exitbttn_img = pygame.image.load("Exit.png")
+    exitbttn_img = pygame.transform.scale(exitbttn_img, button_size)
+    exitbttn_hover_img = pygame.image.load("Exit1.png")
+    exitbttn_hover_img = pygame.transform.scale(exitbttn_hover_img, button_size)
+    exitbttn_rect = exitbttn_img.get_rect(center=(width // 2, height // 2 + 200))
+
+    while True:
+        clock.tick(60)
+
+        success, frame = cap.read()
+        if not success:
+            break
+
+        #screen
+        frame = cv2.flip(frame, 1)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame = pygame.surfarray.make_surface(frame.swapaxes(0, 1))
+        frame = pygame.transform.scale(frame, (width, height))
+        flipped_frame = frame
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+        
+            #play button
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if playbttn_rect.collidepoint(pygame.mouse.get_pos()):
+                    return
+                elif aboutbttn_rect.collidepoint(pygame.mouse.get_pos()):
+                    about_screen()
+                elif exitbttn_rect.collidepoint(pygame.mouse.get_pos()):
+                    pygame.quit()
+                    exit()
+
+        screen.fill((0, 0, 0))      # optional background color
+        screen.blit(flipped_frame, (0, 0))  # camera FIRST layer
+        
+        #play button hover
+        mouse_pos_play = pygame.mouse.get_pos()
+
+        if playbttn_rect.collidepoint(mouse_pos_play):
+            current_img = playbttn_hover_img
+        else:
+            current_img = playbttn_img
+
+        screen.blit(current_img, playbttn_rect)
+
+        #about button hover
+        mouse_pos_about = pygame.mouse.get_pos()
+
+        if aboutbttn_rect.collidepoint(mouse_pos_about):
+            current_img = aboutbttn_hover_img
+        else:
+            current_img = aboutbttn_img
+
+        screen.blit(current_img, aboutbttn_rect)
+
+        #exit button hover
+        mouse_pos_about = pygame.mouse.get_pos()
+
+        if exitbttn_rect.collidepoint(mouse_pos_about):
+            current_img = exitbttn_hover_img
+        else:
+            current_img = exitbttn_img
+
+        screen.blit(current_img, exitbttn_rect)
+
+        pygame.display.update()
+
+# Starting Food
+
+# for count in range(9):
+
+#     if count % 4 == 0:
+#         foods.append(Food(chili_frames, "chili"))
+
+#     elif count % 3 == 0:
+#         foods.append(Food(suman_frames, "suman"))
+
+#     elif count % 2 == 0:
+#         foods.append(Food(siomai_frames, "siomai"))
+
+#     else:
+#         foods.append(Food(siopao_frames, "siopao"))
+
+# Main Menu
+main_menu()
+# Main Game Loop
 while running:
 
     dt = clock.tick(fps)
@@ -300,7 +588,7 @@ while running:
         if effect.finished:
             effects.remove(effect)
 
-    #gameexit button
+    #game exit button
     for event in pygame.event.get():
 
         if event.type == pygame.QUIT:
@@ -309,9 +597,9 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN:
 
             if gameexitbttn_rect.collidepoint(pygame.mouse.get_pos()):
-                running = False
+                main_menu() 
 
-    #gameexit button hover
+    #game exit button hover
     mouse_pos_play = pygame.mouse.get_pos()
 
     if gameexitbttn_rect.collidepoint(mouse_pos_play):
@@ -326,10 +614,7 @@ while running:
 
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    mp_image = mp.Image(
-        image_format=mp.ImageFormat.SRGB,
-        data=rgb
-    )
+    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
 
     result = detector.detect(mp_image)
 
@@ -338,10 +623,29 @@ while running:
     slice_active = False
 
     if result.hand_landmarks:
+        # Get the largest hand only
+        largest_hand = None
+        largest_area = 0
 
         for hand_landmarks in result.hand_landmarks:
+            xs = [lm.x for lm in hand_landmarks]
+            ys = [lm.y for lm in hand_landmarks]
 
-            index_tip = hand_landmarks[8]
+            hand_width = (max(xs) - min(xs)) * w
+            hand_height = (max(ys) - min(ys)) * h
+
+            area = hand_width * hand_height
+
+            if area > largest_area:
+                largest_area = area
+                largest_hand = hand_landmarks
+
+        # minimum hand size threshold
+        MIN_HAND_AREA = 25000
+
+        if largest_hand and largest_area > MIN_HAND_AREA:
+
+            index_tip = largest_hand[8]
 
             x = int(index_tip.x * w)
             y = int(index_tip.y * h)
@@ -351,20 +655,16 @@ while running:
             # trail effect
             trail_points.append(((x, y), now_ms()))
 
-            # movement detection improvement
+            # movement detection
             if prev_tip is not None:
-
-                dist = math.hypot(
-                    x - prev_tip[0],
-                    y - prev_tip[1]
-                )
+                dist = math.hypot(x - prev_tip[0], y - prev_tip[1])
 
                 if dist >= min_distance and len(trail_points) >= 3:
                     slice_active = True
 
             prev_tip = (x, y)
 
-            cv2.circle(frame, (x, y), 10, (0, 255, 0), -1)
+            cv2.circle(frame, (x, y), 11, (255, 180, 0), -1)
 
     # remove old trail points
     trail_points = [
@@ -396,11 +696,8 @@ while running:
             if health > 0 and slice_active and MIN_SWIPE < distance < MAX_SWIPE:
 
                 scale = MAX_SWIPE / distance
-
                 p2 = (
-                    int(p1[0] + dx * scale),
-                    int(p1[1] + dy * scale)
-                )
+                    int(p1[0] + dx * scale), int(p1[1] + dy * scale))
 
                 for f in foods:
 
@@ -408,7 +705,7 @@ while running:
                         p1,
                         p2,
                         (f.x, f.y),
-                        f.radius
+                        f.radius + 25
                     ):
 
                         f.sliced = True
@@ -436,7 +733,7 @@ while running:
                                 Effect(f.x, f.y, food_sliced)
                             )
 
-                            score += 1
+                            score += 2
 
                         if f.foodtype == "suman":
 
@@ -444,19 +741,19 @@ while running:
                                 Effect(f.x, f.y, food_sliced)
                             )
 
-                            score += 1
+                            score += 3
 
-                cv2.line(frame, p1, p2, (255, 0, 0), 4)
+                # cv2.line(frame, p1, p2, (255, 0, 0), 4) 
 
     # Update previous positions
     prev_index_tips = current_index_tips.copy()
 
     # ================= FOOD SPAWN =================
+    # TO EDIT
     spawn_timer += dt
+    if health != 0 and spawn_timer >= spawn_interval and len(foods) < 5:
 
-    if health > 0  and spawn_timer >= spawn_interval:
-
-        if len(foods) < max_food:
+        if len(foods) <= max_food:
 
             rand = random.randint(1, 20)
 
@@ -509,10 +806,7 @@ while running:
     # ================= TRAIL DRAW =================
     if len(trail_points) > 1:
 
-        trail_surface = pygame.Surface(
-            (width, height),
-            pygame.SRCALPHA
-        )
+        trail_surface = pygame.Surface((width, height),pygame.SRCALPHA)
 
         for i in range(1, len(trail_points)):
 
@@ -530,7 +824,7 @@ while running:
 
             thickness = max(
                 1,
-                int(12 * life_ratio)
+                int(13 * life_ratio)
             )
 
             pygame.draw.line(
@@ -545,13 +839,7 @@ while running:
 
     # ================= BUTTON =================
     screen.blit(current_img, gameexitbttn_rect)
-
-    pygame.draw.rect(
-        screen,
-        (255, 0, 0),
-        gameexitbttn_rect,
-        2
-    )
+    pygame.draw.rect(screen, (255, 0, 0), gameexitbttn_rect, 2)
 
     # ================= HEALTH DISPLAY =================
     if health == 3:
@@ -581,9 +869,10 @@ while running:
         if game_over_time is None:
             game_over_time = pygame.time.get_ticks()
 
-        #3seconds before the program closed
+        #3seconds before going back to main menu
         if pygame.time.get_ticks() - game_over_time >= 3000:
-            running = False
+            main_menu()
+
 
     #draw ground
     pygame.draw.rect(screen, (0, 200, 0), ground_rect)
