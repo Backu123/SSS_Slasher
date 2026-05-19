@@ -817,7 +817,7 @@ while running:
             distance = math.hypot(dx, dy)
 
             MAX_SWIPE = 100
-            MIN_SWIPE = 45
+            MIN_SWIPE = 25
 
             if health > 0 and slice_active and MIN_SWIPE < distance < MAX_SWIPE:
 
