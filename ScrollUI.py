@@ -348,86 +348,69 @@ def about_screen():
 
     # About text
     pages = [
-    [
-        " About ",
-        "SSS Slasher is a fast-paced arcade slicing game where players use their hands as blades",
-        "through camera-based hand detection. Slash flying foods, score points, and avoid chilis",
-        "in this computer vision-powered game."
-    ],
+        [
+            " GAME OVERVIEW ",
+            "",
+            "SSS Slasher is a fast-paced arcade slicing game where players use their hands as blades",
+            "through camera-based hand detection. Slash flying foods, score points, and avoid chilis",
+            "in this computer vision-powered game."
+        ],
 
-    [
-        " How to play ",
-        "The goal of the game is to slice as much food and earn points by doing so.",
-        "Slicing three chilis will eliminate the player."
-    ],
+        [
+            " HOW TO PLAY ",
+            '',
+            "The goal of the game is to slice as much food and earn points by doing so.",
+            "Slicing three chilis will eliminate the player."
+        ],
 
-    [
-        " How it works ",
-        "- The player will be showing his hand to the camera. It will act as blade in the",
-        "game and the player can use it by moving it in a slicing motion to the food.",
-        "- Foods such as siomai, siopao and suman will start popping up from the bottom of the screen.",
-        "- The player must slice as much food and avoid chilis.",
-        "- The player won't lose a health if a food is not sliced, only when a chili is sliced.",
-        "- Score as much points and avoid chilis!"
-    ],
+        [
+            " GAME MECHANICS ",
+            "",
+            "1. Show your hand to the camera and it will become your slicing blade in the game.",
+            "2. Move your hand quickly in a slicing motion to cut the flying food items.",
+            "3. Delicious foods such as siomai, siopao, and suman will pop up from the bottom of the screen.",
+            "4. Be ready to slice them before they disappear!",
+            "5. Slice as many foods as you can and earn the highest score possible!",
+            '',
+            "AVOID THE CHILIS!"
+        ],
 
-    [
-        " Developers ",
-        "Audije, Timothy Rayjell",
-        "Bermillo, Franzen Edhrian Kirby",
-        "Capistrano, John Wayne",
-        "Cristobal, Leilanie Alaine",
-        "Teves, Jamaica"
-    ]
+        [
+            " DEVELOPERS ",
+            "",
+            "Audije, Timothy Rayjell",
+            "Bermillo, Franzen Edhrian Kirby",
+            "Capistrano, John Wayne",
+            "Cristobal, Leilanie Alaine",
+            "Teves, Jamaica"
+        ]
     ]
 
     # Animation variables
     current_page = 0
-
     current_frame = 0
     frame_timer = 0
     frame_delay = 12
-
     animation_done = False
 
     # Fonts
-    title_font = pygame.font.SysFont("Times New Roman", 48)
-    text_font = pygame.font.SysFont("Arial", 28)
+    title_font = pygame.font.Font("pixel_operator/PixelOperator8-Bold.ttf", 44)
+    text_font = pygame.font.Font("pixel_operator/PixelOperator.ttf", 23)
+    warning_font = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 30)
 
-    #next scroll page button
-    nextscrollbttn_img = pygame.image.load("Gameexit.png").convert_alpha()
-    nextscrollbttn_img = pygame.transform.scale(nextscrollbttn_img, (50, 50))
+    # Buttons
+    nextscrollbttn_img = pygame.transform.scale(pygame.image.load("Gameexit.png").convert_alpha(), (50, 50))
+    nextscrollbttn_hover_img = pygame.transform.scale(pygame.image.load("Gameexit1.png").convert_alpha(), (50, 50))
+    nextscrollbttn_rect = nextscrollbttn_img.get_rect(center=(680, 700))
 
-    nextscrollbttn_hover_img = pygame.image.load("Gameexit1.png").convert_alpha()
-    nextscrollbttn_hover_img = pygame.transform.scale(nextscrollbttn_hover_img, (50, 50))
-    nextscrollbttn_rect = nextscrollbttn_img.get_rect(center= (680, 700))
-
-    #back scroll page button
-    backscrollbttn_img = pygame.image.load("Gameexit.png").convert_alpha()
-    backscrollbttn_img = pygame.transform.scale(backscrollbttn_img, (50, 50))
-
-    backscrollbttn_hover_img = pygame.image.load("Gameexit1.png").convert_alpha()
-    backscrollbttn_hover_img = pygame.transform.scale(backscrollbttn_hover_img, (50, 50))
-    backscrollbttn_rect = backscrollbttn_img.get_rect(center= (600, 700))
+    backscrollbttn_img = pygame.transform.scale(pygame.image.load("Gameexit.png").convert_alpha(), (50, 50))
+    backscrollbttn_hover_img = pygame.transform.scale(pygame.image.load("Gameexit1.png").convert_alpha(), (50, 50))
+    backscrollbttn_rect = backscrollbttn_img.get_rect(center=(600, 700))
 
     while True:
 
         clock.tick(60)
 
-        # events, exit back to main menu
-        # for event in pygame.event.get():
-
-            # if event.type == pygame.QUIT:
-            #     pygame.quit()
-            #     exit()
-
-            # # Exit About Screen
-            # if event.type == pygame.KEYDOWN:
-
-            #     if event.key == pygame.K_ESCAPE:
-            #         return
-
-        #game exit button
         for event in pygame.event.get():
 
             if event.type == pygame.QUIT:
@@ -438,161 +421,100 @@ def about_screen():
 
                 if gameexitbttn_rect.collidepoint(pygame.mouse.get_pos()):
                     return
-                
-                if nextscrollbttn_rect.collidepoint(
-                    pygame.mouse.get_pos()
-                ):
 
+                if nextscrollbttn_rect.collidepoint(pygame.mouse.get_pos()):
                     if current_page < len(pages) - 1:
-
-                        # Go next page
                         current_page += 1
-
-                        # Restart animation
                         current_frame = 0
                         frame_timer = 0
                         animation_done = False
 
-                if backscrollbttn_rect.collidepoint(
-                    pygame.mouse.get_pos()
-                ):
-
+                if backscrollbttn_rect.collidepoint(pygame.mouse.get_pos()):
                     if current_page > 0:
-
-                        # Go next page
                         current_page -= 1
-
-                        # Restart animation
                         current_frame = 0
                         frame_timer = 0
                         animation_done = False
 
+        mouse_pos = pygame.mouse.get_pos()
 
-        #game exit button hover
-        mouse_pos_play = pygame.mouse.get_pos()
+        current_exit_img = gameexitbttn_hover_img if gameexitbttn_rect.collidepoint(mouse_pos) else gameexitbttn_img
+        current_next_img = nextscrollbttn_hover_img if nextscrollbttn_rect.collidepoint(mouse_pos) else nextscrollbttn_img
+        current_back_img = backscrollbttn_hover_img if backscrollbttn_rect.collidepoint(mouse_pos) else backscrollbttn_img
 
-        if gameexitbttn_rect.collidepoint(mouse_pos_play):
-            current_exit_img = gameexitbttn_hover_img
-
-        else:
-            current_exit_img = gameexitbttn_img
-
-        #next scroll hover button
-        if nextscrollbttn_rect.collidepoint(mouse_pos_play):
-            current_next_img = nextscrollbttn_hover_img
-
-        else:
-            current_next_img = nextscrollbttn_img
-
-        #back scroll hover button
-        if backscrollbttn_rect.collidepoint(mouse_pos_play):
-            current_back_img = backscrollbttn_hover_img
-
-        else:
-            current_back_img = backscrollbttn_img
-
-        # camera
+        # Camera
         success, frame = cap.read()
-
         if not success:
             break
 
         frame = cv2.flip(frame, 1)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame = pygame.surfarray.make_surface(frame.swapaxes(0, 1))
+        frame = pygame.transform.scale(frame, (width, height))
 
-        frame = cv2.cvtColor(
-            frame,
-            cv2.COLOR_BGR2RGB
-        )
-
-        frame = pygame.surfarray.make_surface(
-            frame.swapaxes(0, 1)
-        )
-
-        frame = pygame.transform.scale(
-            frame,
-            (width, height)
-        )
-
-        # draw camera
         screen.blit(frame, (0, 0))
 
-        # Dark overlay
         overlay = pygame.Surface((width, height))
         overlay.set_alpha(120)
         overlay.fill((0, 0, 0))
-
         screen.blit(overlay, (0, 0))
 
-        # scroll animation
+        # Scroll animation
         if not animation_done:
-
             frame_timer += 1
-
             if frame_timer >= frame_delay:
-
                 current_frame += 1
-
                 frame_timer = 0
-
                 if current_frame >= len(scroll_frames):
-
                     current_frame = len(scroll_frames) - 1
-
                     animation_done = True
 
-        # Draw current frame
         scroll_img = scroll_frames[current_frame]
-
-        scroll_rect = scroll_img.get_rect(
-            center=(width // 2, height // 2)
-        )
-
+        scroll_rect = scroll_img.get_rect(center=(width // 2, height // 2))
         screen.blit(scroll_img, scroll_rect)
 
-        # ================= SHOW TEXT =================
         if animation_done:
 
-            y = 190
+            lines = pages[current_page]
+            line_surfaces = []
+            spacing = 10
 
-            for line in pages[current_page]:
+            for line in lines:
 
                 if line in [
-                    " About ",
-                    " How to play ",
-                    " How it works ",
-                    " Developers "
+                    " GAME OVERVIEW ",
+                    " HOW TO PLAY ",
+                    " GAME MECHANICS ",
+                    " DEVELOPERS "
                 ]:
-                    text_surface = title_font.render(
-                        line,
-                        True,
-                        (70, 35, 10)
-                    )
+                    surf = title_font.render(line, True, (70, 35, 10))
+
+                elif line == "AVOID THE CHILIS!":
+                    surf = warning_font.render(line, True, (255, 0, 0))
 
                 else:
+                    surf = text_font.render(line, True, (70, 35, 10))
 
-                    text_surface = text_font.render(
-                        line,
-                        True,
-                        (70, 35, 10)
-                    )
+                line_surfaces.append(surf)
 
-                text_rect = text_surface.get_rect(
-                    center=(width // 2, y)
-                )
+            total_height = sum(s.get_height() for s in line_surfaces) + spacing * (len(line_surfaces) - 1)
+            y = (height - total_height) // 2
 
-                screen.blit(text_surface, text_rect)
+            for surf in line_surfaces:
 
-                y += 50
+                text_rect = surf.get_rect(center=(width // 2, y + surf.get_height() // 2))
+                screen.blit(surf, text_rect)
 
+                y += surf.get_height() + spacing
+
+        # Buttons
         screen.blit(current_exit_img, gameexitbttn_rect)
+
         if current_page < len(pages) - 1:
             screen.blit(current_next_img, nextscrollbttn_rect)
-            pygame.draw.rect(screen, (255, 0, 0), nextscrollbttn_rect, 2)
+
         if current_page > 0:
             screen.blit(current_back_img, backscrollbttn_rect)
-            pygame.draw.rect(screen, (255, 0, 0), backscrollbttn_rect, 2)
-        
-        pygame.draw.rect(screen, (255, 0, 0), gameexitbttn_rect, 2)
 
         pygame.display.update()
 
