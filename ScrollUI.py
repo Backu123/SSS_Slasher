@@ -125,6 +125,13 @@ def get_leaderboard():
 
     return cursor.fetchall()
 
+# display leaderboard
+def display_leaderboard():
+    leaderboard = get_leaderboard()
+
+    print("\n=== Leaderboard ===")
+    for i, (username, score, game_time) in enumerate(leaderboard, start=1):
+        print(f"{i}. {username} - Score: {score}, Time: {game_time}")
 
 # GIF Animation
 def load_gif_frames(path, scale_size=None):
