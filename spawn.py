@@ -164,8 +164,8 @@ while running:
     prev_index_tips = current_index_tips.copy()
 
     spawn_timer += dt
-    if spawn_timer >= spawn_interval and len(foods) < 1:
-        for _ in range(5):
+    if spawn_timer >= spawn_interval and len(foods) < 9:
+        if random.random() < 0.7:  # 70% chance to spawn a food item
             foods.append(Food((255, 200, 100)))
         spawn_timer = 0
     
