@@ -6,7 +6,6 @@ from mediapipe.tasks.python import vision
 import pygame
 import random
 import math
-import os
 import psycopg2
 from PIL import Image
 
@@ -379,12 +378,9 @@ def about_screen():
     animation_done = False
 
     # Fonts
-    # title_font = pygame.font.SysFont("Times New Roman", 48)
-    # text_font = pygame.font.SysFont("Arial", 24)
-    # warning_font = pygame.font.SysFont("Arial", 26, bold=True)
-    title_font = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 75)
-    text_font = pygame.font.Font("pixel_operator/PixelOperator.ttf", 24)
-    warning_font = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 26)
+    title_font = pygame.font.SysFont("pixel_operator/PixelOperator-Bold.ttf", 48)
+    text_font = pygame.font.SysFont("pixel_operator/PixelOperator.ttf", 28)
+    warning_font = pygame.font.SysFont("pixel_operator/PixelOperator-Bold.ttf", 36)
 
     #next scroll page button
     #scroll page navigation
@@ -571,9 +567,8 @@ def about_screen():
                 )
 
                 screen.blit(text_surface, text_rect)
-                # # center vertically
-                # total_text_height = len(pages[current_page])
-                y += 40
+
+                y += 50
 
         screen.blit(current_exit_img, gameexitbttn_rect)
         if current_page < len(pages) - 1:
