@@ -140,7 +140,7 @@ def load_gif_frames(path, scale_size=None):
             if scale_size:
                 frame = frame.resize(scale_size)
 
-            pygame_image = pygame.image.fromstring(
+            pygame_image = pygame.image.frombytes(
                 frame.tobytes(),
                 frame.size,
                 frame.mode
@@ -746,18 +746,15 @@ while running:
     result = detector.detect(mp_image)
 
     # ================= HAND TRACKING =================
-    slice_active = False
+    left_slice_active = False
+    right_slice_active = False
 
     if result.hand_landmarks and result.handedness:
-    
-        # MediaPipe returns paired lists: landmarks[i] matches handedness[i]
+
         for i, hand_landmarks in enumerate(result.hand_landmarks):
-            
-            # --- Hand Identification ---
-            # handedness[i][0] contains the highest probability label (e.g., 'Left', 'Right')
+
             hand_label = result.handedness[i][0].category_name
-            
-            # --- Geometry & Area Calculation ---
+
             xs = [lm.x for lm in hand_landmarks]
             ys = [lm.y for lm in hand_landmarks]
 
@@ -765,65 +762,58 @@ while running:
             hand_height = (max(ys) - min(ys)) * h
             area = hand_width * hand_height
 
-            # Threshold check
-            MIN_HAND_AREA = 25000 
-            
+            MIN_HAND_AREA = 25000
+
             if area > MIN_HAND_AREA:
-                index_tip = hand_landmarks[8] # Index 8 is the index finger tip
+
+                index_tip = hand_landmarks[8]
+
                 x = int(index_tip.x * w)
                 y = int(index_tip.y * h)
 
-                # --- Branch Logic based on Left vs Right ---
                 if hand_label == 'Left':
-                    # Handle Left Hand
-                    left_trail_points.append(((x, y), now_ms()))
+
                     current_left_tip = (x, y)
-                    
-                    # Movement Detection (Left)
+
+                    left_trail_points.append(
+                        ((x, y), now_ms())
+                    )
+
                     if prev_left_tip is not None:
-                        dist = math.hypot(x - prev_left_tip[0], y - prev_left_tip[1])
-                        if dist >= min_distance and len(left_trail_points) >= 3:
+
+                        dist = math.hypot(
+                            x - prev_left_tip[0],
+                            y - prev_left_tip[1]
+                        )
+
+                        if dist >= min_distance:
                             left_slice_active = True
-                    prev_left_tip = (x, y)
-                    
-                    # Draw Left Blade (e.g., Cyan/Blue)
-                    cv2.circle(frame, (x, y), 11, (255, 200, 0), -1) 
+
+                    cv2.circle(frame, (x, y), 11, (255, 200, 0), -1)
 
                 elif hand_label == 'Right':
-                    # Handle Right Hand
-                    right_trail_points.append(((x, y), now_ms()))
-                    current_right_tip = (x, y)
-                    
-                    # Movement Detection (Right)
-                    if prev_right_tip is not None:
-                        dist = math.hypot(x - prev_right_tip[0], y - prev_right_tip[1])
-                        if dist >= min_distance and len(right_trail_points) >= 3:
-                            right_slice_active = True
-                    prev_right_tip = (x, y)
 
-                    # Draw Right Blade (e.g., Magenta/Red)
+                    current_right_tip = (x, y)
+
+                    right_trail_points.append(
+                        ((x, y), now_ms())
+                    )
+
+                    if prev_right_tip is not None:
+
+                        dist = math.hypot(
+                            x - prev_right_tip[0],
+                            y - prev_right_tip[1]
+                        )
+
+                        if dist >= min_distance:
+                            right_slice_active = True
+
                     cv2.circle(frame, (x, y), 11, (0, 100, 255), -1)
 
-    # Cleanup LEFT Trail
-    left_trail_points = [
-        (point, t)
-        for point, t in left_trail_points
-        if now_ms() - t < particle_longevity_ms
-    ]
-
-    # Cleanup RIGHT Trail
-    right_trail_points = [
-        (point, t)
-        for point, t in right_trail_points
-        if now_ms() - t < particle_longevity_ms
-    ]
-
-    # Limit Lengths
-    if len(left_trail_points) > trail_length:
-        left_trail_points = left_trail_points[-trail_length:]
-        
-    if len(right_trail_points) > trail_length:
-        right_trail_points = right_trail_points[-trail_length:]
+    else:
+        prev_left_tip = None
+        prev_right_tip = None
 
     # ================= SLICING LOGIC =================
 
@@ -869,24 +859,29 @@ while running:
                         effects.append(Effect(f.x, f.y, food_sliced))
                         score += 3
 
-            # Visual slice line
-            cv2.line(frame, p1, p2, (255, 0, 0), 4)
 
     # Check Left Hand
-    if left_slice_active and current_left_tip is not None and prev_left_tip is not None:
+    if (
+        left_slice_active and
+        current_left_tip is not None and
+        prev_left_tip is not None
+    ):
         check_slice(prev_left_tip, current_left_tip)
 
     # Check Right Hand
-    if right_slice_active and current_right_tip is not None and prev_right_tip is not None:
+    if (
+        right_slice_active and
+        current_right_tip is not None and
+        prev_right_tip is not None
+    ):
         check_slice(prev_right_tip, current_right_tip)
 
     # Update previous positions
     if current_left_tip is not None:
         prev_left_tip = current_left_tip
-    
+
     if current_right_tip is not None:
         prev_right_tip = current_right_tip
-
     # ================= FOOD SPAWN =================
     # TO EDIT
     spawn_timer += dt
@@ -1005,6 +1000,15 @@ while running:
             )
 
             screen.blit(rotated_image, rotated_rect)
+            
+            # # DEBUG HITBOX CIRCLE
+            # pygame.draw.circle(
+            #     screen,
+            #     (255, 0, 0),          # red color
+            #     (int(f.x), int(f.y)), # center
+            #     f.radius,             # radius
+            #     2                     # thickness
+            # )
 
     # ================= EFFECTS =================
     for effect in effects:
