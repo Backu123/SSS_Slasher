@@ -1045,7 +1045,7 @@ while running:
 
         #2seconds before going back to main menu
         if pygame.time.get_ticks() - game_over_time >= 2000:
-            save_score("John Wayne", score, final_time)
+            save_score("Leilanie", score, final_time)
             game_timer = 0
             health = 3
             print("Game Over! Returning to Main Menu...")
