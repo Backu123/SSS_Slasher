@@ -579,7 +579,6 @@ def about_screen():
 
         pygame.display.update()
 
-
 def main_menu():
     screen = pygame.display.set_mode((width, height))
     font = pygame.font.SysFont("Arial", 25)
