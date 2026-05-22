@@ -6,7 +6,6 @@ from mediapipe.tasks.python import vision
 import pygame
 import random
 import math
-import os
 import psycopg2
 from PIL import Image
 
@@ -307,6 +306,28 @@ class Effect:
     def draw(self, screen):
         screen.blit(self.image, self.rect)
 
+# Main Game Variables
+current_index_tips = []
+prev_index_tips = []
+
+running = True
+
+foods = []
+effects = []
+
+#scroll page navigation
+nextscrollbttn_img = pygame.image.load("Next.png").convert_alpha()
+nextscrollbttn_img = pygame.transform.scale(nextscrollbttn_img, (50, 50))
+
+nextscrollbttn_hover_img = pygame.image.load("Next1.png").convert_alpha()
+nextscrollbttn_hover_img = pygame.transform.scale(nextscrollbttn_hover_img, (50, 50))
+
+backscrollbttn_img = pygame.image.load("Back.png").convert_alpha()
+backscrollbttn_img = pygame.transform.scale(backscrollbttn_img, (50, 50))
+
+backscrollbttn_hover_img = pygame.image.load("Back1.png").convert_alpha()
+backscrollbttn_hover_img = pygame.transform.scale(backscrollbttn_hover_img, (50, 50))
+
 #about screen
 def about_screen():
 
@@ -331,42 +352,37 @@ def about_screen():
 
     # About text
     pages = [
-        [
-            " GAME OVERVIEW ",
-            "",
-            "SSS Slasher is a fast-paced arcade slicing game where players use their hands as blades",
-            "through camera-based hand detection. Slash flying foods, score points, and avoid chilis",
-            "in this computer vision-powered game."
-        ],
+    [
+        " About ",
+        "SSS Slasher is a fast-paced arcade slicing game where players use their hands as blades",
+        "through camera-based hand detection. Slash flying foods, score points, and avoid chilis",
+        "in this computer vision-powered game."
+    ],
 
-        [
-            " HOW TO PLAY ",
-            '',
-            "The goal of the game is to slice as much food and earn points by doing so.",
-            "Slicing three chilis will eliminate the player."
-        ],
+    [
+        " How to play ",
+        "The goal of the game is to slice as much food and earn points by doing so.",
+        "Slicing three chilis will eliminate the player."
+    ],
 
-        [
-            " GAME MECHANICS ",
-            "",
-            "1. Show your hand to the camera and it will become your slicing blade in the game.",
-            "2. Move your hand quickly in a slicing motion to cut the flying food items.",
-            "3. Delicious foods such as siomai, siopao, and suman will pop up from the bottom of the screen.",
-            "4. Be ready to slice them before they disappear!",
-            "5. Slice as many foods as you can and earn the highest score possible!",
-            '',
-            "AVOID THE CHILIS!"
-        ],
+    [
+        " How it works ",
+        "- The player will be showing his hand to the camera. It will act as blade in the",
+        "game and the player can use it by moving it in a slicing motion to the food.",
+        "- Foods such as siomai, siopao and suman will start popping up from the bottom of the screen.",
+        "- The player must slice as much food and avoid chilis.",
+        "- The player won't lose a health if a food is not sliced, only when a chili is sliced.",
+        "- Score as much points and avoid chilis!"
+    ],
 
-        [
-            " DEVELOPERS ",
-            "",
-            "Audije, Timothy Rayjell",
-            "Bermillo, Franzen Edhrian Kirby",
-            "Capistrano, John Wayne",
-            "Cristobal, Leilanie Alaine",
-            "Teves, Jamaica"
-        ]
+    [
+        " Developers ",
+        "Audije, Timothy Rayjell",
+        "Bermillo, Franzen Edhrian Kirby",
+        "Capistrano, John Wayne",
+        "Cristobal, Leilanie Alaine",
+        "Teves, Jamaica"
+    ]
     ]
 
     # Animation variables
@@ -379,40 +395,33 @@ def about_screen():
     animation_done = False
 
     # Fonts
-    # title_font = pygame.font.SysFont("Times New Roman", 48)
-    # text_font = pygame.font.SysFont("Arial", 24)
-    # warning_font = pygame.font.SysFont("Arial", 26, bold=True)
-    title_font = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 75)
-    text_font = pygame.font.Font("pixel_operator/PixelOperator.ttf", 24)
-    warning_font = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 26)
+    title_font = pygame.font.SysFont("Times New Roman", 48)
+    text_font = pygame.font.SysFont("Arial", 28)
 
     #next scroll page button
-    #scroll page navigation
-    nextscrollbttn_img = pygame.image.load("Next.png").convert_alpha()
-    nextscrollbttn_img = pygame.transform.scale(nextscrollbttn_img, (50, 50))
-
-    nextscrollbttn_hover_img = pygame.image.load("Next1.png").convert_alpha()
-    nextscrollbttn_hover_img = pygame.transform.scale(nextscrollbttn_hover_img, (50, 50))
-
-    nextscrollbttn_rect = nextscrollbttn_img.get_rect(center= (680, 670))
+    
+    nextscrollbttn_rect = nextscrollbttn_img.get_rect(center= (680, 700))
 
     #back scroll page button
-    backscrollbttn_img = pygame.image.load("Back.png").convert_alpha()
-    backscrollbttn_img = pygame.transform.scale(backscrollbttn_img, (50, 50))
 
-    backscrollbttn_hover_img = pygame.image.load("Back1.png").convert_alpha()
-    backscrollbttn_hover_img = pygame.transform.scale(backscrollbttn_hover_img, (50, 50))
-
-    backscrollbttn_rect = backscrollbttn_img.get_rect(center= (600, 670))
-
-    # FIX: initialize current images (IMPORTANT)
-    current_next_img = nextscrollbttn_img
-    current_back_img = backscrollbttn_img
-    current_exit_img = gameexitbttn_img
+    backscrollbttn_rect = backscrollbttn_img.get_rect(center= (600, 700))
 
     while True:
 
         clock.tick(60)
+
+        # events, exit back to main menu
+        # for event in pygame.event.get():
+
+            # if event.type == pygame.QUIT:
+            #     pygame.quit()
+            #     exit()
+
+            # # Exit About Screen
+            # if event.type == pygame.KEYDOWN:
+
+            #     if event.key == pygame.K_ESCAPE:
+            #         return
 
         #game exit button
         for event in pygame.event.get():
@@ -456,20 +465,25 @@ def about_screen():
 
 
         #game exit button hover
-        mouse_pos = pygame.mouse.get_pos()
+        mouse_pos_play = pygame.mouse.get_pos()
 
-        if gameexitbttn_rect.collidepoint(mouse_pos):
+        if gameexitbttn_rect.collidepoint(mouse_pos_play):
             current_exit_img = gameexitbttn_hover_img
+
         else:
             current_exit_img = gameexitbttn_img
 
-        if nextscrollbttn_rect.collidepoint(mouse_pos):
+        #next scroll hover button
+        if nextscrollbttn_rect.collidepoint(mouse_pos_play):
             current_next_img = nextscrollbttn_hover_img
+
         else:
             current_next_img = nextscrollbttn_img
 
-        if backscrollbttn_rect.collidepoint(mouse_pos):
+        #back scroll hover button
+        if backscrollbttn_rect.collidepoint(mouse_pos_play):
             current_back_img = backscrollbttn_hover_img
+
         else:
             current_back_img = backscrollbttn_img
 
@@ -539,23 +553,15 @@ def about_screen():
             for line in pages[current_page]:
 
                 if line in [
-                    " GAME OVERVIEW ",
-                    " HOW TO PLAY ",
-                    " GAME MECHANICS ",
-                    " DEVELOPERS "
+                    " About ",
+                    " How to play ",
+                    " How it works ",
+                    " Developers "
                 ]:
                     text_surface = title_font.render(
                         line,
                         True,
                         (70, 35, 10)
-                    )
-
-                elif line == "AVOID THE CHILIS!":
-
-                    text_surface = warning_font.render(
-                        line,
-                        True,
-                        (255, 0, 0)
                     )
 
                 else:
@@ -571,33 +577,27 @@ def about_screen():
                 )
 
                 screen.blit(text_surface, text_rect)
-                # # center vertically
-                # total_text_height = len(pages[current_page])
-                y += 40
+
+                y += 50
 
         screen.blit(current_exit_img, gameexitbttn_rect)
         if current_page < len(pages) - 1:
             screen.blit(current_next_img, nextscrollbttn_rect)
-            #pygame.draw.rect(screen, (255, 0, 0), nextscrollbttn_rect, 2)
+            pygame.draw.rect(screen, (255, 0, 0), nextscrollbttn_rect, 2)
             
         if current_page > 0:
             screen.blit(current_back_img, backscrollbttn_rect)
-            #pygame.draw.rect(screen, (255, 0, 0), backscrollbttn_rect, 2)
+            pygame.draw.rect(screen, (255, 0, 0), backscrollbttn_rect, 2)
         
         pygame.draw.rect(screen, (255, 0, 0), gameexitbttn_rect, 2)
 
         pygame.display.update()
-
 
 def main_menu():
     screen = pygame.display.set_mode((width, height))
     font = pygame.font.SysFont("Arial", 25)
 
     button_size = 200, 40
-
-    namelogo_img= pygame.image.load("NameLogo.png")
-    namelogo_img= pygame.transform.scale(namelogo_img, (400, 320))
-    namelogo_rect = namelogo_img.get_rect(center = (640, 170))
 
     #play button
     playbttn_img = pygame.image.load("Play.png")
@@ -682,23 +682,7 @@ def main_menu():
 
         screen.blit(current_img, exitbttn_rect)
 
-        screen.blit(namelogo_img, namelogo_rect)
-
         pygame.display.update()
-
-# Main Game Variables
-running = True
-
-foods = []
-effects = []
-
-left_trail_points = []
-right_trail_points = []
-
-prev_left_tip = None
-prev_right_tip = None
-current_left_tip = None
-current_right_tip = None
 
 # Main Menu
 main_menu()
@@ -713,6 +697,7 @@ while running:
     game_timer_minutes = total_seconds // 60
     game_timer_seconds = total_seconds % 60
     final_time = f"{game_timer_minutes:02.0f}:{game_timer_seconds%60:02.0f}"
+
 
     success, frame = cap.read()
 
@@ -764,147 +749,137 @@ while running:
     result = detector.detect(mp_image)
 
     # ================= HAND TRACKING =================
+    current_index_tips.clear()
     slice_active = False
-    left_slice_active = False
-    right_slice_active = False
 
-    if result.hand_landmarks and result.handedness:
-    
-        # MediaPipe returns paired lists: landmarks[i] matches handedness[i]
-        for i, hand_landmarks in enumerate(result.hand_landmarks):
-            
-            # --- Hand Identification ---
-            # handedness[i][0] contains the highest probability label (e.g., 'Left', 'Right')
-            hand_label = result.handedness[i][0].category_name
-            
-            # --- Geometry & Area Calculation ---
+    if result.hand_landmarks:
+        # Get the largest hand only
+        largest_hand = None
+        largest_area = 0
+
+        for hand_landmarks in result.hand_landmarks:
             xs = [lm.x for lm in hand_landmarks]
             ys = [lm.y for lm in hand_landmarks]
 
             hand_width = (max(xs) - min(xs)) * w
             hand_height = (max(ys) - min(ys)) * h
+
             area = hand_width * hand_height
 
-            # Threshold check
-            MIN_HAND_AREA = 25000 
-            
-            if area > MIN_HAND_AREA:
-                index_tip = hand_landmarks[8] # Index 8 is the index finger tip
-                x = int(index_tip.x * w)
-                y = int(index_tip.y * h)
+            if area > largest_area:
+                largest_area = area
+                largest_hand = hand_landmarks
 
-                # --- Branch Logic based on Left vs Right ---
-                if hand_label == 'Left':
-                    # Handle Left Hand
-                    left_trail_points.append(((x, y), now_ms()))
-                    current_left_tip = (x, y)
-                    
-                    # Movement Detection (Left)
-                    if prev_left_tip is not None:
-                        dist = math.hypot(x - prev_left_tip[0], y - prev_left_tip[1])
-                        if dist >= min_distance and len(left_trail_points) >= 3:
-                            left_slice_active = True
-                    prev_left_tip = (x, y)
-                    
-                    # Draw Left Blade (e.g., Cyan/Blue)
-                    cv2.circle(frame, (x, y), 11, (255, 200, 0), -1) 
+        # minimum hand size threshold
+        MIN_HAND_AREA = 25000
 
-                elif hand_label == 'Right':
-                    # Handle Right Hand
-                    right_trail_points.append(((x, y), now_ms()))
-                    current_right_tip = (x, y)
-                    
-                    # Movement Detection (Right)
-                    if prev_right_tip is not None:
-                        dist = math.hypot(x - prev_right_tip[0], y - prev_right_tip[1])
-                        if dist >= min_distance and len(right_trail_points) >= 3:
-                            right_slice_active = True
-                    prev_right_tip = (x, y)
+        if largest_hand and largest_area > MIN_HAND_AREA:
 
-                    # Draw Right Blade (e.g., Magenta/Red)
-                    cv2.circle(frame, (x, y), 11, (0, 100, 255), -1)
+            index_tip = largest_hand[8]
 
-    # Cleanup LEFT Trail
-    left_trail_points = [
+            x = int(index_tip.x * w)
+            y = int(index_tip.y * h)
+
+            current_index_tips.append((x, y))
+
+            # trail effect
+            trail_points.append(((x, y), now_ms()))
+
+            # movement detection
+            if prev_tip is not None:
+                dist = math.hypot(x - prev_tip[0], y - prev_tip[1])
+
+                if dist >= min_distance and len(trail_points) >= 3:
+                    slice_active = True
+
+            prev_tip = (x, y)
+
+            cv2.circle(frame, (x, y), 11, (255, 180, 0), -1)
+
+    # remove old trail points
+    trail_points = [
         (point, t)
-        for point, t in left_trail_points
+        for point, t in trail_points
         if now_ms() - t < particle_longevity_ms
     ]
 
-    # Cleanup RIGHT Trail
-    right_trail_points = [
-        (point, t)
-        for point, t in right_trail_points
-        if now_ms() - t < particle_longevity_ms
-    ]
+    # keep trail short
+    if len(trail_points) > trail_length:
+        trail_points = trail_points[-trail_length:]
 
-    # Limit Lengths
-    if len(left_trail_points) > trail_length:
-        left_trail_points = left_trail_points[-trail_length:]
-        
-    if len(right_trail_points) > trail_length:
-        right_trail_points = right_trail_points[-trail_length:]
-
-    # Update previous positions
-    if current_left_tip is not None:
-        prev_left_tip = current_left_tip
-
-    if current_right_tip is not None:
-        prev_right_tip = current_right_tip
     # ================= SLICING LOGIC =================
+    if len(current_index_tips) >= 1:
 
-    def check_slice_path(trail_points):
-        global health, score, effects, foods
+        if len(current_index_tips) == 1 and len(prev_index_tips) >= 1:
 
-        if len(trail_points) < 2 or health <= 0:
-            return
+            p1 = prev_index_tips[0]
+            p2 = current_index_tips[0]
 
-        MAX_SWIPE = 120
-        MIN_SWIPE = 30
-
-        for i in range(1, len(trail_points)):
-            p1 = trail_points[i - 1][0]
-            p2 = trail_points[i][0]
             dx = p2[0] - p1[0]
             dy = p2[1] - p1[1]
+
             distance = math.hypot(dx, dy)
 
-            if not (MIN_SWIPE < distance < MAX_SWIPE):
-                continue
+            MAX_SWIPE = 100
+            MIN_SWIPE = 45
 
-            hit_any = False
-            for f in foods:
-                if not f.sliced and segment_circle_intersection(
-                    p1, p2, (f.x, f.y), f.radius + 25
-                ):
-                    f.sliced = True
-                    hit_any = True
+            if health > 0 and slice_active and MIN_SWIPE < distance < MAX_SWIPE:
 
-                    if f.foodtype == "chili":
-                        effects.append(Effect(f.x, f.y, chili_sliced))
-                        health -= 1
-                    elif f.foodtype == "siopao":
-                        effects.append(Effect(f.x, f.y, food_sliced))
-                        score += 1
-                    elif f.foodtype == "siomai":
-                        effects.append(Effect(f.x, f.y, food_sliced))
-                        score += 2
-                    elif f.foodtype == "suman":
-                        effects.append(Effect(f.x, f.y, food_sliced))
-                        score += 3
+                scale = MAX_SWIPE / distance
+                p2 = (
+                    int(p1[0] + dx * scale), int(p1[1] + dy * scale))
 
-            if hit_any:
-                cv2.line(frame, p1, p2, (255, 0, 0), 4)
+                for f in foods:
 
-    # Check Left Hand using the full recent trail
-    if left_slice_active:
-        check_slice_path(left_trail_points)
+                    if not f.sliced and segment_circle_intersection(
+                        p1,
+                        p2,
+                        (f.x, f.y),
+                        f.radius + 25
+                    ):
 
-    # Check Right Hand using the full recent trail
-    if right_slice_active:
-        check_slice_path(right_trail_points)
+                        f.sliced = True
+
+                        #slice animation
+                        if f.foodtype == "chili":
+
+                            effects.append(
+                                Effect(f.x, f.y, chili_sliced)
+                            )
+
+                            health -= 1
+
+                        if f.foodtype == "siopao":
+
+                            effects.append(
+                                Effect(f.x, f.y, food_sliced)
+                            )
+
+                            score += 1
+
+                        if f.foodtype == "siomai":
+
+                            effects.append(
+                                Effect(f.x, f.y, food_sliced)
+                            )
+
+                            score += 2
+
+                        if f.foodtype == "suman":
+
+                            effects.append(
+                                Effect(f.x, f.y, food_sliced)
+                            )
+
+                            score += 3
+
+                # cv2.line(frame, p1, p2, (255, 0, 0), 4) 
+
+    # Update previous positions
+    prev_index_tips = current_index_tips.copy()
 
     # ================= FOOD SPAWN =================
+    # TO EDIT
     spawn_timer += dt
     if health != 0 and spawn_timer >= spawn_interval and len(foods) < 5:
 
@@ -959,29 +934,38 @@ while running:
     screen.blit(frame, (0, 0))
 
     # ================= TRAIL DRAW =================
-    def draw_trails(trail_data):
-        if len(trail_data) > 1:
-            trail_surface = pygame.Surface((width, height), pygame.SRCALPHA)
-            
-            for i in range(1, len(trail_data)):
-                p1, t1 = trail_data[i - 1]
-                p2, t2 = trail_data[i]
-                age = now_ms() - t2
-                life_ratio = max(0, 1 - (age / particle_longevity_ms))
-                alpha = int(255 * life_ratio)
-                thickness = max(1, int(13 * life_ratio))
-                
-                pygame.draw.line(
-                    trail_surface,
-                    (0, 180,255,alpha), p1, p2, thickness
-                )
-            screen.blit(trail_surface, (0, 0))
+    if len(trail_points) > 1:
 
-    # Left Trail (Cyan)
-    draw_trails(left_trail_points)
+        trail_surface = pygame.Surface((width, height),pygame.SRCALPHA)
 
-    # Right Trail (Orange/Red, baguhin na lang sa color)
-    draw_trails(right_trail_points)
+        for i in range(1, len(trail_points)):
+
+            p1, t1 = trail_points[i - 1]
+            p2, t2 = trail_points[i]
+
+            age = now_ms() - t2
+
+            life_ratio = max(
+                0,
+                1 - (age / particle_longevity_ms)
+            )
+
+            alpha = int(255 * life_ratio)
+
+            thickness = max(
+                1,
+                int(13 * life_ratio)
+            )
+
+            pygame.draw.line(
+                trail_surface,
+                (0, 180, 255, alpha),
+                p1,
+                p2,
+                thickness
+            )
+
+        screen.blit(trail_surface, (0, 0))
 
     # ================= BUTTON =================
     screen.blit(current_img, gameexitbttn_rect)
