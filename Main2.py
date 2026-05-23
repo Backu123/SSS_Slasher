@@ -9,6 +9,7 @@ import math
 import os
 import psycopg2
 from PIL import Image
+from tkinter import messagebox, Tk
 
 # Database connection
 DB_URL = "postgresql://neondb_owner:npg_yAHXZ0iM8ORI@ep-proud-haze-ao93abr3-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
@@ -87,6 +88,28 @@ options = vision.HandLandmarkerOptions(
 
 detector = vision.HandLandmarker.create_from_options(options)
 
+# --- CAMERA PERMISSION PROMPT ---
+def request_camera_permission():
+    root = Tk()
+    root.withdraw() # Hides the tiny default blank window
+    
+    # Show the custom confirmation popup box
+    permission = messagebox.askyesno(
+        "Camera Permission Required", 
+        "\"Siopao, Siomai, Suman Slasher\" uses your webcam to detect hand movements.\n\n"
+        "Do you grant permission to open the camera?"
+    )
+    root.destroy()
+    return permission
+
+# Check permission before doing anything else
+if not request_camera_permission():
+    print("Camera permission denied. Exiting game.")
+    import sys
+    sys.exit() # Gracefully stops the script right here
+# --------------------------------
+
+# If they clicked 'Yes', the code continues and opens the camera safely
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
