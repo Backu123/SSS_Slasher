@@ -21,7 +21,7 @@ width, height = 1280, 720
 fps = 60
 food_spawn_interval_ms = 900
 
-gravity = 0.4
+gravity = 0.3
 intial_vy_min, intial_vy_max = 12, 18
 
 #Implement swipe longevity here
@@ -677,6 +677,31 @@ def main_menu():
 
         pygame.display.update()
 
+def flash():
+    duration = 500
+    start_time = now_ms()
+
+    while True:
+        elapsed = now_ms() - start_time
+        if elapsed >= duration:
+            break
+
+        progress = elapsed / duration 
+
+        if progress < 0.3:
+            alpha = int((progress / 0.3) * 128)
+        elif progress < 0.7:
+            alpha = 128  # ~0.5 opacity
+        else:
+            alpha = int((1 - (progress - 0.7) / 0.3) * 128)
+
+        overlay = pygame.Surface((width, height), pygame.SRCALPHA)
+        overlay.fill((255, 0, 0, alpha))
+
+        screen.blit(overlay, (0, 0))
+        pygame.display.update()
+        clock.tick(60)
+
 # Main Game Variables
 running = True
 
@@ -873,6 +898,7 @@ while running:
 
                     if f.foodtype == "chili":
                         effects.append(Effect(f.x, f.y, chili_sliced))
+                        flash()
                         health -= 1
                     elif f.foodtype == "siopao":
                         effects.append(Effect(f.x, f.y, food_sliced))
@@ -1021,7 +1047,7 @@ while running:
     score_text = font.render(
         f"Score: {score}",
         True,
-        (255, 0, 0)
+        (0, 0, 0)
     )
 
     screen.blit(score_img, (100, 5))
