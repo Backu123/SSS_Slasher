@@ -15,7 +15,6 @@ DB_URL = "postgresql://neondb_owner:npg_yAHXZ0iM8ORI@ep-proud-haze-ao93abr3-pool
 conn = psycopg2.connect(DB_URL)
 cursor = conn.cursor()
 
-
 #Configs
 width, height = 1280, 720
 fps = 60
@@ -511,15 +510,11 @@ def about_screen():
             frame_timer += 1
 
             if frame_timer >= frame_delay:
-
                 current_frame += 1
-
                 frame_timer = 0
 
                 if current_frame >= len(scroll_frames):
-
                     current_frame = len(scroll_frames) - 1
-
                     animation_done = True
 
         # Draw current frame
@@ -630,10 +625,18 @@ def main_menu():
                 pygame.quit()
                 exit()
         
-            #play button
+            #play button (modified with pause reset)
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if playbttn_rect.collidepoint(pygame.mouse.get_pos()):
+
+                    global game_paused, last_activity_time, game_timer
+
+                    game_paused = False
+                    last_activity_time = pygame.time.get_ticks()
+                    game_timer = 0
+
                     return
+
                 elif aboutbttn_rect.collidepoint(pygame.mouse.get_pos()):
                     about_screen()
                 elif exitbttn_rect.collidepoint(pygame.mouse.get_pos()):
@@ -714,13 +717,25 @@ current_right_tip = None
 
 # Main Menu
 main_menu()
+
+# afk system variables
+afk_timeout = 7000  # 7 seconds in milliseconds
+game_paused = False
+last_activity_time = pygame.time.get_ticks()
+
 # Main Game Loop
 while running:
 
     dt = clock.tick(fps)
+    current_time = pygame.time.get_ticks()
+
+    # Inactivity checker
+    if not game_paused and current_time - last_activity_time >= afk_timeout:
+        game_paused = True
 
     # timer seconds 
-    game_timer += dt
+    if not game_paused:
+        game_timer += dt
     total_seconds = game_timer // 1000 # convert milliseconds to seconds
     game_timer_minutes = total_seconds // 60
     game_timer_seconds = total_seconds % 60
@@ -801,11 +816,12 @@ while running:
             MIN_HAND_AREA = 25000 
             
             if area > MIN_HAND_AREA:
+                last_activity_time = pygame.time.get_ticks()
                 index_tip = hand_landmarks[8] # Index 8 is the index finger tip
                 x = int(index_tip.x * w)
                 y = int(index_tip.y * h)
 
-                # --- Branch Logic based on Left vs Right ---
+                # Logic based Left vs Right
                 if hand_label == 'Left':
                     # Handle Left Hand
                     left_trail_points.append(((x, y), now_ms()))
@@ -863,6 +879,7 @@ while running:
 
     if current_right_tip is not None:
         prev_right_tip = current_right_tip
+
     # ================= SLICING LOGIC =================
 
     def check_slice_path(trail_points):
@@ -917,6 +934,49 @@ while running:
     if right_slice_active:
         check_slice_path(right_trail_points)
 
+    #======= Display if the game is paused due to inactivity ========
+    if game_paused:
+
+        # Draw pause overlay
+        pause_surface = pygame.Surface((width, height), pygame.SRCALPHA)
+        pause_surface.fill((0, 0, 0, 180))
+        screen.blit(pause_surface, (0, 0))
+
+        pause_text = pygame.font.Font(
+            "pixel_operator/PixelOperator-Bold.ttf",
+            70
+        ).render("GAME PAUSED", True, (255, 255, 255))
+
+        instruction_text = pygame.font.Font(
+            "pixel_operator/PixelOperator.ttf",
+            30
+        ).render("Move your hand to continue", True, (255, 255, 255))
+
+        screen.blit(
+            pause_text,
+            (
+                width // 2 - pause_text.get_width() // 2,
+                height // 2 - 80
+            )
+        )
+
+        screen.blit(
+            instruction_text,
+            (
+                width // 2 - instruction_text.get_width() // 2,
+                height // 2 + 10
+            )
+        )
+
+        pygame.display.update()
+
+        # Resume if hand detected again
+        if result.hand_landmarks:
+            game_paused = False
+            last_activity_time = pygame.time.get_ticks()
+
+        continue
+    
     # ================= FOOD SPAWN =================
     spawn_timer += dt
     if health != 0 and spawn_timer >= spawn_interval and len(foods) < 5:
