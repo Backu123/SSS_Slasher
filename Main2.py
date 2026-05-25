@@ -21,7 +21,7 @@ width, height = 1280, 720
 fps = 60
 food_spawn_interval_ms = 900
 
-gravity = 0.4
+gravity = 0.3
 intial_vy_min, intial_vy_max = 12, 18
 
 #Implement swipe longevity here
@@ -677,6 +677,27 @@ def main_menu():
 
         pygame.display.update()
 
+def flash():
+    duration = 500
+    start_time = now_ms()
+
+    while True:
+        surface = pygame.Surface((width, height), pygame.SRCALPHA)
+        elapsed = now_ms() - start_time
+        if elapsed >= duration:
+            break
+        progress = elapsed / duration 
+        if progress < 0.3:
+            alpha = int((progress / 0.3) * 60)
+        elif progress < 0.7:
+            alpha = 80  # ~0.5 opacity
+        else:
+            alpha = int((1 - (progress - 0.7) / 0.3) * 60)
+        surface.fill((200, 0, 0, alpha))
+        screen.blit(surface, (0, 0))
+        pygame.display.update()
+        clock.tick(60)
+
 # Main Game Variables
 running = True
 
@@ -873,6 +894,7 @@ while running:
 
                     if f.foodtype == "chili":
                         effects.append(Effect(f.x, f.y, chili_sliced))
+                        flash()
                         health -= 1
                     elif f.foodtype == "siopao":
                         effects.append(Effect(f.x, f.y, food_sliced))
@@ -1021,18 +1043,27 @@ while running:
     score_text = font.render(
         f"Score: {score}",
         True,
-        (255, 0, 0)
+        (0, 0, 0)
     )
 
     screen.blit(score_img, (100, 5))
     screen.blit(score_text, (120, 15))
 
     # Timer display
-    timer_text = font.render(f"{game_timer_minutes:02.0f}:{game_timer_seconds%60:02.0f}", True, (255, 255, 255))
+    timer_text = font.render(f"{game_timer_minutes:02.0f}:{game_timer_seconds%60:02.0f}", True, (0,0,0))
     screen.blit(timer_text, (screen.get_width() // 2 - timer_text.get_width() // 2, 15))
 
     if health == 0:
+        # Display Game Over overlay
+        surface = pygame.Surface((width, height), pygame.SRCALPHA)
+        surface.fill((0, 0, 0, 180))
+        screen.blit(surface, (0, 0))
+        game_over_text = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 100).render("Game Over!", True, (255, 0, 0))
+        game_over_score = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 50).render(f"Score: {score}", True, (255, 255, 255))
+        screen.blit(game_over_text,(width // 2 - game_over_text.get_width() // 2,height // 2 - game_over_text.get_height() // 2 - 25))
+        screen.blit(game_over_score, (width // 2 - game_over_score.get_width() // 2, height // 2 + 25))
 
+        
         foods.clear()
 
         screen.blit(damageicon_img, damageicon_rect)
