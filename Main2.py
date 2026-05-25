@@ -213,6 +213,11 @@ gameover_img = pygame.image.load("GameOver.png").convert_alpha()
 gameover_img = pygame.transform.scale(gameover_img, (1024, 576))
 gameover_rect = gameover_img.get_rect(center=(width // 2, height // 2 - 25))
 
+#Paused
+paused_img = pygame.image.load("paused.png").convert_alpha()
+paused_img = pygame.transform.scale(paused_img, (819.2, 460.8))
+paused_rect = paused_img.get_rect(center=(width // 2, height // 2))
+
 # Food Class
 class Food:
 
