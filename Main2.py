@@ -200,6 +200,20 @@ damageicon2_rect = damageicon2_img.get_rect(topright=(width - 100, 0))
 chili_sliced = load_gif_frames("Chili slashed.gif", (100, 100))
 food_sliced = load_gif_frames("Food sliced.gif", (100, 100))
 
+#Settings Icon
+settingsbttn_img = pygame.image.load("Settings.png").convert_alpha()
+settingsbttn_img = pygame.transform.scale(settingsbttn_img, (70, 70))
+
+settingsbttn_hover_img = pygame.image.load("Settings1.png").convert_alpha()
+settingsbttn_hover_img = pygame.transform.scale(settingsbttn_hover_img, (70, 70))
+
+settingsbttn_rect = settingsbttn_img.get_rect(topleft=(1, 1))
+
+#GameOver
+gameover_img = pygame.image.load("GameOver.png").convert_alpha()
+gameover_img = pygame.transform.scale(gameover_img, (1024, 576))
+gameover_rect = gameover_img.get_rect(center=(width // 2, height // 2 - 25))
+
 # Food Class
 class Food:
 
@@ -586,8 +600,19 @@ def main_menu():
 
     button_size = 200, 40
 
+    #leaderbaord
+    show_leaderboard = False
+
+    ldicon_img = pygame.image.load("leaderboardIcon.png")
+    ldicon_img = pygame.transform.scale(ldicon_img, (50, 50))
+    ldicon_rect = ldicon_img.get_rect(topright=(width - 10, 10))
+
+    leaderboard_img = pygame.image.load("leaderboard panel.png")
+    leaderboard_img = pygame.transform.scale(leaderboard_img, (500, 560))
+    leaderboard_rect = leaderboard_img.get_rect(topright = (width, 100))
+
     namelogo_img= pygame.image.load("NameLogo.png")
-    namelogo_img= pygame.transform.scale(namelogo_img, (400, 320))
+    namelogo_img= pygame.transform.scale(namelogo_img, (400, 360))
     namelogo_rect = namelogo_img.get_rect(center = (640, 170))
 
     #play button
@@ -630,7 +655,7 @@ def main_menu():
                 pygame.quit()
                 exit()
         
-            #play button
+            #buttons
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if playbttn_rect.collidepoint(pygame.mouse.get_pos()):
                     return
@@ -639,6 +664,8 @@ def main_menu():
                 elif exitbttn_rect.collidepoint(pygame.mouse.get_pos()):
                     pygame.quit()
                     exit()
+                elif ldicon_rect.collidepoint(pygame.mouse.get_pos()):
+                    show_leaderboard = not show_leaderboard
 
         screen.fill((0, 0, 0))      # optional background color
         screen.blit(flipped_frame, (0, 0))  # camera FIRST layer
@@ -674,6 +701,13 @@ def main_menu():
         screen.blit(current_img, exitbttn_rect)
 
         screen.blit(namelogo_img, namelogo_rect)
+
+        screen.blit(ldicon_img, ldicon_rect)
+        
+        #leaderboard panel display
+        if show_leaderboard:
+            screen.blit(leaderboard_img, leaderboard_rect)
+            pygame.draw.rect(screen, (0, 200, 0), ldicon_rect, 5)
 
         pygame.display.update()
 
@@ -747,22 +781,39 @@ while running:
 
         if event.type == pygame.MOUSEBUTTONDOWN:
 
-            if gameexitbttn_rect.collidepoint(pygame.mouse.get_pos()):
-                game_timer = 0
+            if settingsbttn_rect.collidepoint(pygame.mouse.get_pos()):
+                # Handle settings button click
+                 # reset game values
+                foods.clear()
+                effects.clear()
+
                 health = 3
                 score = 0
-                print("Returning to Main Menu...")
-                print(f"Final Time: {final_time}")
-                print(f"Final Score: {score}")
+                game_timer = 0
+                game_over_time = None
+
+                # reset trails
+                left_trail_points.clear()
+                right_trail_points.clear()
+
+                # return to menu
                 main_menu()
+
+    #settings button hover
+    mouse_pos_play = pygame.mouse.get_pos()
+
+    if settingsbttn_rect.collidepoint(mouse_pos_play):
+        current_img = settingsbttn_hover_img
+    else:
+        current_img = settingsbttn_img
 
     #game exit button hover
     mouse_pos_play = pygame.mouse.get_pos()
 
-    if gameexitbttn_rect.collidepoint(mouse_pos_play):
-        current_img = gameexitbttn_hover_img
+    if settingsbttn_rect.collidepoint(mouse_pos_play):
+        current_img = settingsbttn_hover_img
     else:
-        current_img = gameexitbttn_img
+        current_img = settingsbttn_img
 
     # ================= CAMERA =================
     frame = cv2.flip(frame, 1)
@@ -997,8 +1048,8 @@ while running:
     draw_trails(right_trail_points, (255, 140, 0))
 
     # ================= BUTTON =================
-    screen.blit(current_img, gameexitbttn_rect)
-    pygame.draw.rect(screen, (255, 0, 0), gameexitbttn_rect, 2)
+    screen.blit(current_img, settingsbttn_rect)
+    #pygame.draw.rect(screen, (255, 0, 0), settingsbttn_rect, 2)
 
     # ================= HEALTH DISPLAY =================
     if health == 3:
@@ -1058,9 +1109,8 @@ while running:
         surface = pygame.Surface((width, height), pygame.SRCALPHA)
         surface.fill((0, 0, 0, 180))
         screen.blit(surface, (0, 0))
-        game_over_text = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 100).render("Game Over!", True, (255, 0, 0))
+        screen.blit(gameover_img, gameover_rect)
         game_over_score = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 50).render(f"Score: {score}", True, (255, 255, 255))
-        screen.blit(game_over_text,(width // 2 - game_over_text.get_width() // 2,height // 2 - game_over_text.get_height() // 2 - 25))
         screen.blit(game_over_score, (width // 2 - game_over_score.get_width() // 2, height // 2 + 25))
 
         
@@ -1076,9 +1126,12 @@ while running:
 
         #2seconds before going back to main menu
         if pygame.time.get_ticks() - game_over_time >= 2000:
+            
             save_score("Leilanie", score, final_time)
             game_timer = 0
             health = 3
+            score = 0
+            game_over_time = None
             print("Game Over! Returning to Main Menu...")
             print(f"Final Time: {final_time}")
             print(f"Final Score: {score}")
