@@ -139,7 +139,7 @@ def save_score(username, score, game_time):
 
 def get_leaderboard():
     cursor.execute("""
-        SELECT username, score, game_time, created_at
+        SELECT username, score, game_time
         FROM leaderboards
         ORDER BY score DESC, created_at ASC
         LIMIT 10
@@ -776,9 +776,50 @@ def main_menu():
         screen.blit(ldicon_img, ldicon_rect)
         
         #leaderboard panel display
+        # leaderboard panel display
         if show_leaderboard:
+
             screen.blit(leaderboard_img, leaderboard_rect)
             pygame.draw.rect(screen, (0, 200, 0), ldicon_rect, 5)
+
+            # get leaderboard data
+            leaderboard_data = get_leaderboard()
+
+            entry_font = pygame.font.Font(
+                "pixel_operator/PixelOperator.ttf", 24
+            )
+
+            # starting y-position
+            start_y = leaderboard_rect.y + 100
+
+            # display leaderboard entries
+            for i, entry in enumerate(leaderboard_data):
+
+                username, score, game_time = entry
+
+                rank_text = entry_font.render(
+                    f"{i+1}. {username}",
+                    True,
+                    (0,0,0)
+                )
+
+                score_text = entry_font.render(
+                    f"Score: {score}",
+                    True,
+                    (0,0, 0)
+                )
+
+                time_text = entry_font.render(
+                    f"{game_time}",
+                    True,
+                    (0, 0,0)
+                )
+
+                y = start_y + i * 40
+
+                screen.blit(rank_text, (leaderboard_rect.x + 100, y+30))
+                screen.blit(score_text, (leaderboard_rect.x + 230, y+30))
+                screen.blit(time_text, (leaderboard_rect.x + 340, y+30))
 
         pygame.display.update()
 
@@ -1290,7 +1331,6 @@ while running:
         screen.blit(gameover_img, gameover_rect)
         game_over_score = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 50).render(f"{score}", True, (255, 255, 255))
         screen.blit(game_over_score, (width // 2 - game_over_score.get_width() // 2 - 190, height // 2 + 75))
-        # game_over_time_record = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 50).render(f"{final_time}", True, (255, 255, 255))
         game_over_time_record = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 50).render(f"{final_time_record}", True, (255, 255, 255))
         screen.blit(game_over_time_record, (width // 2 - game_over_time_record.get_width() // 2 + 160, height // 2 + 75))
         
@@ -1307,12 +1347,12 @@ while running:
         #2seconds before going back to main menu
         if pygame.time.get_ticks() - game_over_time >= 2000:
             
-            save_score("Leilanie", score, final_time)
+            save_score("JaBaithon", score, final_time_record)
             game_timer = 0
             health = 3
             score = 0
             game_over_time = None
-            print(get_leaderboard())
+            # print(get_leaderboard())
             main_menu()
 
     #paused panel when settings cliked
