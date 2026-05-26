@@ -976,25 +976,29 @@ while running:
             last_activity_time = pygame.time.get_ticks()
 
         continue
-    
+
+    # ================= DIFFICULTY ADJUSTMENT =================
+    time_elapsed_seconds = total_seconds
+    speed_penalty = (time_elapsed_seconds // 10) * 5 
+    current_spawn_interval = max(80, spawn_interval - speed_penalty)
+
+    score_bonus = score // 10
+    chili_min_value = max(10, 20 - score_bonus - 2)
+
     # ================= FOOD SPAWN =================
     spawn_timer += dt
     if health != 0 and spawn_timer >= spawn_interval and len(foods) < 5:
 
         if len(foods) <= max_food:
-
             rand = random.randint(1, 20)
 
             if rand <= 6:
                 foods.append(Food(siopao_frames, "siopao"))
-
             elif rand <= 12:
                 foods.append(Food(siomai_frames, "siomai"))
-
             elif rand <= 18:
                 foods.append(Food(suman_frames, "suman"))
-
-            else:
+            elif rand >= chili_min_value:
                 foods.append(Food(chili_frames, "chili"))
 
         spawn_timer = 0
