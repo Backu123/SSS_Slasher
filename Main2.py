@@ -719,12 +719,23 @@ def main_menu():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if playbttn_rect.collidepoint(pygame.mouse.get_pos()):
 
-                    global game_paused, game_settings_open, last_activity_time, game_timer
+                    global game_paused, game_settings_open
+                    global last_activity_time, game_timer
+                    global danger_timer, danger_mode
+                    global next_danger_time, next_score_trigger
 
                     game_paused = False
                     game_settings_open = False
                     last_activity_time = pygame.time.get_ticks()
+
+                    # Reset timers
                     game_timer = 0
+                    danger_timer = 0
+
+                    # Reset danger mode
+                    danger_mode = False
+                    next_danger_time = 30000
+                    next_score_trigger = 100
 
                     return
 
@@ -934,6 +945,11 @@ while running:
                     left_trail_points.clear()
                     right_trail_points.clear()
 
+                    danger_mode = False
+                    danger_timer = 0
+                    next_danger_time = 30000
+                    next_score_trigger = 100
+
                     main_menu()
             
     #settings button hover
@@ -1014,20 +1030,17 @@ while running:
 
                         cv2.circle(frame, (x, y), 11, (0, 100, 255), -1)
 
-
     # Cleanup LEFT Trail
     left_trail_points = [
         (point, t)
         for point, t in left_trail_points
-        if now_ms() - t < particle_longevity_ms
-    ]
+        if now_ms() - t < particle_longevity_ms]
 
     # Cleanup RIGHT Trail
     right_trail_points = [
         (point, t)
         for point, t in right_trail_points
-        if now_ms() - t < particle_longevity_ms
-    ]
+        if now_ms() - t < particle_longevity_ms]
 
     # Limit Lengths
     if len(left_trail_points) > trail_length:
@@ -1085,7 +1098,6 @@ while running:
                     elif f.foodtype == "suman":
                         effects.append(Effect(f.x, f.y, food_sliced))
                         score += 3
-
             
             if hit_any:
                 cv2.line(frame, p1, p2, (255, 0, 0), 4)
@@ -1100,7 +1112,6 @@ while running:
 
     #======= Display if the game is paused due to inactivity ========
     if game_paused:
-
         game_settings_open = True
     
     # ================= CURRENT DIFFICULTY =================
@@ -1172,9 +1183,6 @@ while running:
 
     #DISPLAY ITO para sa difficulty mode
     if danger_mode and pygame.time.get_ticks() % 500 < 250:
-        #warning_text = big_pixel_font.render("SPICY!", True, (255, 0, 0))
-        #outline = big_pixel_font.render("SPICY!", True, (0, 0, 0))
-
         warning_text = pygame.font.Font(
             "pixel_operator/PixelOperator-Bold.ttf", 50).render("SPICY!", True, (255, 0, 0))
         outline = pygame.font.Font(
@@ -1286,7 +1294,6 @@ while running:
         game_over_score = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 50).render(f"Score: {score}", True, (255, 255, 255))
         screen.blit(game_over_score, (width // 2 - game_over_score.get_width() // 2, height // 2 + 25))
 
-        
         foods.clear()
 
         screen.blit(damageicon_img, damageicon_rect)
