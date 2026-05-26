@@ -762,6 +762,9 @@ afk_timeout = 7000  # 7 seconds in milliseconds
 game_paused = False
 last_activity_time = pygame.time.get_ticks()
 
+#settings
+game_paused = False
+
 # Main Game Loop
 while running:
 
