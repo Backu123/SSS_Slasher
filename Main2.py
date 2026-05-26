@@ -178,6 +178,8 @@ def load_gif_frames(path, scale_size=None):
 
     return frames
 
+final_time_record = "0"
+
 # GIF Images
 siopao_frames = load_gif_frames("Siopao.gif", (100, 100))
 siomai_frames = load_gif_frames("Siomai.gif", (100, 100))
@@ -1276,16 +1278,21 @@ while running:
     # Timer display
     timer_text = font.render(f"{game_timer_minutes:02.0f}:{game_timer_seconds%60:02.0f}", True, (0,0,0))
     screen.blit(timer_text, (screen.get_width() // 2 - timer_text.get_width() // 2, 15))
-
     if health == 0:
+        if game_over_time is None:
+            game_over_time = pygame.time.get_ticks()
+            final_time_record = final_time
+
         # Display Game Over overlay
         surface = pygame.Surface((width, height), pygame.SRCALPHA)
         surface.fill((0, 0, 0, 180))
         screen.blit(surface, (0, 0))
         screen.blit(gameover_img, gameover_rect)
-        game_over_score = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 50).render(f"Score: {score}", True, (255, 255, 255))
-        screen.blit(game_over_score, (width // 2 - game_over_score.get_width() // 2, height // 2 + 25))
-
+        game_over_score = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 50).render(f"{score}", True, (255, 255, 255))
+        screen.blit(game_over_score, (width // 2 - game_over_score.get_width() // 2 - 190, height // 2 + 75))
+        # game_over_time_record = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 50).render(f"{final_time}", True, (255, 255, 255))
+        game_over_time_record = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 50).render(f"{final_time_record}", True, (255, 255, 255))
+        screen.blit(game_over_time_record, (width // 2 - game_over_time_record.get_width() // 2 + 160, height // 2 + 75))
         
         foods.clear()
 
@@ -1305,9 +1312,7 @@ while running:
             health = 3
             score = 0
             game_over_time = None
-            print("Game Over! Returning to Main Menu...")
-            print(f"Final Time: {final_time}")
-            print(f"Final Score: {score}")
+            print(get_leaderboard())
             main_menu()
 
     #paused panel when settings cliked
