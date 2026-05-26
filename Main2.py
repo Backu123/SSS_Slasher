@@ -28,7 +28,7 @@ intial_vy_min, intial_vy_max = 12, 18
 particle_longevity_ms = 700
 
 #max food items on screen at once, to prevent lag
-max_food = 5
+max_food = 7
 
 #food dispawning area
 rect_x = 0
@@ -414,10 +414,6 @@ def about_screen():
 
     animation_done = False
 
-    # Fonts
-    # title_font = pygame.font.SysFont("Times New Roman", 48)
-    # text_font = pygame.font.SysFont("Arial", 24)
-    # warning_font = pygame.font.SysFont("Arial", 26, bold=True)
     title_font = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 75)
     text_font = pygame.font.Font("pixel_operator/PixelOperator.ttf", 24)
     warning_font = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 26)
@@ -773,6 +769,26 @@ prev_right_tip = None
 current_left_tip = None
 current_right_tip = None
 
+# difficulty setting
+danger_mode = False
+
+danger_duration = 10000
+danger_timer = 0
+
+next_danger_time = 30000
+next_score_trigger = 100
+
+# Spawn speeds
+normal_spawn_interval = 250
+danger_spawn_interval = 150
+
+normal_chili_chance = 2
+danger_chili_chance = 8
+
+# Chili chances
+normal_chili_limit = 3
+danger_chili_limit = 8
+
 # afk system variables
 afk_timeout = 7000  # 7 seconds in milliseconds
 game_paused = False
@@ -792,21 +808,38 @@ while running:
     dt = clock.tick(fps)
     current_time = pygame.time.get_ticks()
 
-    # 🔥 FIX ADDED HERE (ONLY CHANGE)
+    # FIX ADDED HERE (ONLY CHANGE)
     is_paused = game_paused or game_settings_open
-
 
     # Inactivity checker
     if not game_paused and current_time - last_activity_time >= afk_timeout:
         game_paused = True
 
-    # timer seconds 
-    #if not game_paused:
-        #game_timer += dt
     total_seconds = game_timer // 1000 # convert milliseconds to seconds
     game_timer_minutes = total_seconds // 60
     game_timer_seconds = total_seconds % 60
     final_time = f"{game_timer_minutes:02.0f}:{game_timer_seconds%60:02.0f}"
+
+    # ================= DIFFICULTY TRIGGER =================
+    if not danger_mode:
+
+        # Time-based trigger
+        if game_timer >= next_danger_time:
+            danger_mode = True
+            danger_timer = pygame.time.get_ticks()
+
+            next_danger_time += 30000
+
+        # Score-based trigger
+        elif score >= next_score_trigger:
+            danger_mode = True
+            danger_timer = pygame.time.get_ticks()
+
+            next_score_trigger += 100
+
+    if not is_paused and danger_mode:
+        if pygame.time.get_ticks() - danger_timer >= danger_duration:
+            danger_mode = False
 
     success, frame = cap.read()
 
@@ -814,12 +847,6 @@ while running:
         break
 
     #sliced animation
-    #for effect in effects[:]:
-
-        #effect.update()
-
-        #if effect.finished:
-            #effects.remove(effect)
     if not is_paused:
         for effect in effects[:]:
             effect.update()
@@ -1070,27 +1097,33 @@ while running:
 
         continue
     
+    # ================= CURRENT DIFFICULTY =================
+    if danger_mode:
+        current_spawn_interval = danger_spawn_interval
+        chili_limit = danger_chili_limit
+    else:
+        current_spawn_interval = normal_spawn_interval
+        chili_limit = normal_chili_limit
+
     # ================= FOOD SPAWN =================
     spawn_timer += dt
-    #if health != 0 and spawn_timer >= spawn_interval and len(foods) < 5:
-    #if not game_paused:
-        #spawn_timer += dt
+
     if not is_paused:
         game_timer += dt
 
-    if not is_paused and health != 0 and spawn_timer >= spawn_interval and len(foods) < 5:
+    if not is_paused and health != 0 and spawn_timer >= current_spawn_interval and len(foods) < 5:
 
         if len(foods) <= max_food:
 
             rand = random.randint(1, 20)
 
-            if rand <= 6:
+            if rand <= 5:
                 foods.append(Food(siopao_frames, "siopao"))
 
-            elif rand <= 12:
+            elif rand <= 10:
                 foods.append(Food(siomai_frames, "siomai"))
 
-            elif rand <= 18:
+            elif rand <= 20 - chili_limit:
                 foods.append(Food(suman_frames, "suman"))
 
             else:
@@ -1099,9 +1132,6 @@ while running:
         spawn_timer = 0
 
     # ================= FOOD UPDATE =================
-    #for food in foods[:]:
-        #food.update()
-
     if not game_paused:
         for food in foods[:]:
             food.update()
@@ -1133,6 +1163,27 @@ while running:
 
     # ================= DRAW =================
     screen.blit(frame, (0, 0))
+
+    #DISPLAY ITO para sa difficulty mode
+    if danger_mode and pygame.time.get_ticks() % 500 < 250:
+        #warning_text = big_pixel_font.render("SPICY!", True, (255, 0, 0))
+        #outline = big_pixel_font.render("SPICY!", True, (0, 0, 0))
+
+        warning_text = pygame.font.Font(
+            "pixel_operator/PixelOperator-Bold.ttf", 50).render("SPICY!", True, (255, 0, 0))
+        outline = pygame.font.Font(
+            "pixel_operator/PixelOperator-Bold.ttf", 50).render("SPICY!", True, (0, 0, 0))
+
+        x = width // 2 - warning_text.get_width() // 2
+        y = 60
+
+        screen.blit(outline, (x - 3, y - 3))
+        screen.blit(outline, (x + 3, y + 3))
+        screen.blit(outline, (x - 3, y + 3))
+        screen.blit(outline, (x + 3, y - 3))
+
+        # draw main text
+        screen.blit(warning_text, (x, y))
 
     # =================== PAUSE OVERLAY =================
     if game_settings_open:
