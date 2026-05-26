@@ -225,7 +225,7 @@ resume_img = pygame.transform.scale(resume_img, (200, 60))
 resume_hover_img = pygame.image.load("Resume1.png").convert_alpha()
 resume_hover_img = pygame.transform.scale(resume_hover_img, (200, 60))
 
-resume_rect = resume_img.get_rect(center=(width // 2- 100, height // 2 + 100))
+resume_rect = resume_img.get_rect(center=(width // 2 - 200, height // 2 + 70))
 
 #Back to main menu
 BTMM_img = pygame.image.load("BTMM.png").convert_alpha()
@@ -234,7 +234,7 @@ BTMM_img = pygame.transform.scale(BTMM_img, (200, 60))
 BTMM_hover_img = pygame.image.load("BTMM1.png").convert_alpha()
 BTMM_hover_img = pygame.transform.scale(BTMM_hover_img, (200, 60))
 
-BTMM_rect = BTMM_img.get_rect(center=(width // 2 + 100, height // 2 + 100))
+BTMM_rect = BTMM_img.get_rect(center=(width // 2 + 200, height // 2 + 70))
 
 # Food Class
 class Food:
@@ -827,7 +827,7 @@ while running:
             if effect.finished:
                 effects.remove(effect)
 
-    #game exit button
+    #game settings
     for event in pygame.event.get():
 
         if event.type == pygame.QUIT:
