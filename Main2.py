@@ -9,6 +9,7 @@ import math
 import os
 import psycopg2
 from PIL import Image
+from tkinter import messagebox, Tk
 
 # Database connection
 DB_URL = "postgresql://neondb_owner:npg_yAHXZ0iM8ORI@ep-proud-haze-ao93abr3-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
@@ -86,6 +87,28 @@ options = vision.HandLandmarkerOptions(
 
 detector = vision.HandLandmarker.create_from_options(options)
 
+# --- CAMERA PERMISSION PROMPT ---
+def request_camera_permission():
+    root = Tk()
+    root.withdraw() # Hides the tiny default blank window
+    
+    # Show the custom confirmation popup box
+    permission = messagebox.askyesno(
+        "Camera Permission Required", 
+        "\"Siopao, Siomai, Suman Slasher\" uses your webcam to detect hand movements.\n\n"
+        "Do you grant permission to open the camera?"
+    )
+    root.destroy()
+    return permission
+
+# Check permission before doing anything else
+if not request_camera_permission():
+    print("Camera permission denied. Exiting game.")
+    import sys
+    sys.exit() # Gracefully stops the script right here
+# --------------------------------
+
+# If they clicked 'Yes', the code continues and opens the camera safely
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
@@ -607,6 +630,29 @@ def about_screen():
 
         pygame.display.update()
 
+# Training data: [distance_to_center, swipe_speed, fruit_radius]
+X_train = [
+    [5, 30, 20],   # close, fast swipe, medium fruit → hit
+    [25, 10, 15],  # far, slow swipe, small fruit → miss
+    [8, 40, 25],   # close, fast swipe, large fruit → hit
+]
+y_train = [1, 0, 1]  # 1 = hit, 0 = miss
+
+def knn_predict(X_train, y_train, new_point, k=3):
+    # Compute distances between new_point and all training samples
+    distances = []
+    for i, x in enumerate(X_train):
+        dist = math.sqrt(sum((a - b) ** 2 for a, b in zip(x, new_point)))
+        distances.append((dist, y_train[i]))
+    
+    # Sort by distance
+    distances.sort(key=lambda d: d[0])
+    
+    # Take k nearest neighbors
+    neighbors = [label for _, label in distances[:k]]
+    
+    # Majority vote
+    return 1 if neighbors.count(1) > neighbors.count(0) else 0
 
 def main_menu():
     screen = pygame.display.set_mode((width, height))
@@ -943,34 +989,31 @@ while running:
 
                     # Logic based Left vs Right
                     if hand_label == 'Left':
-                        # Handle Left Hand
                         left_trail_points.append(((x, y), now_ms()))
                         current_left_tip = (x, y)
-                    
-                        # Movement Detection (Left)
+
                         if prev_left_tip is not None:
                             dist = math.hypot(x - prev_left_tip[0], y - prev_left_tip[1])
+                            swipe_speed = math.hypot(x - prev_left_tip[0], y - prev_left_tip[1])  # use LEFT tip
                             if dist >= min_distance and len(left_trail_points) >= 3:
                                 left_slice_active = True
                         prev_left_tip = (x, y)
-                    
-                        # Draw Left Blade (e.g., Cyan/Blue)
-                        cv2.circle(frame, (x, y), 11, (255, 200, 0), -1) 
+
+                        cv2.circle(frame, (x, y), 11, (255, 200, 0), -1)
 
                     elif hand_label == 'Right':
-                        # Handle Right Hand
                         right_trail_points.append(((x, y), now_ms()))
                         current_right_tip = (x, y)
-                    
-                        # Movement Detection (Right)
+
                         if prev_right_tip is not None:
                             dist = math.hypot(x - prev_right_tip[0], y - prev_right_tip[1])
+                            swipe_speed = math.hypot(x - prev_right_tip[0], y - prev_right_tip[1])  # use RIGHT tip
                             if dist >= min_distance and len(right_trail_points) >= 3:
                                 right_slice_active = True
                         prev_right_tip = (x, y)
 
-                        # Draw Right Blade (e.g., Magenta/Red)
                         cv2.circle(frame, (x, y), 11, (0, 100, 255), -1)
+
 
     # Cleanup LEFT Trail
     left_trail_points = [
@@ -1043,6 +1086,7 @@ while running:
                         effects.append(Effect(f.x, f.y, food_sliced))
                         score += 3
 
+            
             if hit_any:
                 cv2.line(frame, p1, p2, (255, 0, 0), 4)
 
