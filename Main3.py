@@ -9,6 +9,7 @@ import math
 import os
 import psycopg2
 from PIL import Image
+from tkinter import messagebox, Tk
 
 # Database connection
 DB_URL = "postgresql://neondb_owner:npg_yAHXZ0iM8ORI@ep-proud-haze-ao93abr3-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
@@ -28,7 +29,7 @@ intial_vy_min, intial_vy_max = 12, 18
 particle_longevity_ms = 700
 
 #max food items on screen at once, to prevent lag
-max_food = 7
+max_food = 5
 
 #food dispawning area
 rect_x = 0
@@ -86,6 +87,28 @@ options = vision.HandLandmarkerOptions(
 
 detector = vision.HandLandmarker.create_from_options(options)
 
+# --- CAMERA PERMISSION PROMPT ---
+def request_camera_permission():
+    root = Tk()
+    root.withdraw() # Hides the tiny default blank window
+    
+    # Show the custom confirmation popup box
+    permission = messagebox.askyesno(
+        "Camera Permission Required", 
+        "\"Siopao, Siomai, Suman Slasher\" uses your webcam to detect hand movements.\n\n"
+        "Do you grant permission to open the camera?"
+    )
+    root.destroy()
+    return permission
+
+# Check permission before doing anything else
+if not request_camera_permission():
+    print("Camera permission denied. Exiting game.")
+    import sys
+    sys.exit() # Gracefully stops the script right here
+# --------------------------------
+
+# If they clicked 'Yes', the code continues and opens the camera safely
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
@@ -414,6 +437,10 @@ def about_screen():
 
     animation_done = False
 
+    # Fonts
+    # title_font = pygame.font.SysFont("Times New Roman", 48)
+    # text_font = pygame.font.SysFont("Arial", 24)
+    # warning_font = pygame.font.SysFont("Arial", 26, bold=True)
     title_font = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 75)
     text_font = pygame.font.Font("pixel_operator/PixelOperator.ttf", 24)
     warning_font = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 26)
@@ -607,6 +634,29 @@ def about_screen():
 
         pygame.display.update()
 
+# Training data: [distance_to_center, swipe_speed, fruit_radius]
+X_train = [
+    [5, 30, 20],   # close, fast swipe, medium fruit → hit
+    [25, 10, 15],  # far, slow swipe, small fruit → miss
+    [8, 40, 25],   # close, fast swipe, large fruit → hit
+]
+y_train = [1, 0, 1]  # 1 = hit, 0 = miss
+
+def knn_predict(X_train, y_train, new_point, k=3):
+    # Compute distances between new_point and all training samples
+    distances = []
+    for i, x in enumerate(X_train):
+        dist = math.sqrt(sum((a - b) ** 2 for a, b in zip(x, new_point)))
+        distances.append((dist, y_train[i]))
+    
+    # Sort by distance
+    distances.sort(key=lambda d: d[0])
+    
+    # Take k nearest neighbors
+    neighbors = [label for _, label in distances[:k]]
+    
+    # Majority vote
+    return 1 if neighbors.count(1) > neighbors.count(0) else 0
 
 def main_menu():
     screen = pygame.display.set_mode((width, height))
@@ -769,26 +819,6 @@ prev_right_tip = None
 current_left_tip = None
 current_right_tip = None
 
-# difficulty setting
-danger_mode = False
-
-danger_duration = 10000
-danger_timer = 0
-
-next_danger_time = 30000
-next_score_trigger = 100
-
-# Spawn speeds
-normal_spawn_interval = 250
-danger_spawn_interval = 150
-
-normal_chili_chance = 2
-danger_chili_chance = 8
-
-# Chili chances
-normal_chili_limit = 3
-danger_chili_limit = 8
-
 # afk system variables
 afk_timeout = 7000  # 7 seconds in milliseconds
 game_paused = False
@@ -808,38 +838,21 @@ while running:
     dt = clock.tick(fps)
     current_time = pygame.time.get_ticks()
 
-    # FIX ADDED HERE (ONLY CHANGE)
+    # 🔥 FIX ADDED HERE (ONLY CHANGE)
     is_paused = game_paused or game_settings_open
+
 
     # Inactivity checker
     if not game_paused and current_time - last_activity_time >= afk_timeout:
         game_settings_open = True
 
+    # timer seconds 
+    #if not game_paused:
+        #game_timer += dt
     total_seconds = game_timer // 1000 # convert milliseconds to seconds
     game_timer_minutes = total_seconds // 60
     game_timer_seconds = total_seconds % 60
     final_time = f"{game_timer_minutes:02.0f}:{game_timer_seconds%60:02.0f}"
-
-    # ================= DIFFICULTY TRIGGER =================
-    if not danger_mode:
-
-        # Time-based trigger
-        if game_timer >= next_danger_time:
-            danger_mode = True
-            danger_timer = pygame.time.get_ticks()
-
-            next_danger_time += 30000
-
-        # Score-based trigger
-        elif score >= next_score_trigger:
-            danger_mode = True
-            danger_timer = pygame.time.get_ticks()
-
-            next_score_trigger += 100
-
-    if not is_paused and danger_mode:
-        if pygame.time.get_ticks() - danger_timer >= danger_duration:
-            danger_mode = False
 
     success, frame = cap.read()
 
@@ -847,6 +860,12 @@ while running:
         break
 
     #sliced animation
+    #for effect in effects[:]:
+
+        #effect.update()
+
+        #if effect.finished:
+            #effects.remove(effect)
     if not is_paused:
         for effect in effects[:]:
             effect.update()
@@ -943,34 +962,31 @@ while running:
 
                     # Logic based Left vs Right
                     if hand_label == 'Left':
-                        # Handle Left Hand
                         left_trail_points.append(((x, y), now_ms()))
                         current_left_tip = (x, y)
-                    
-                        # Movement Detection (Left)
+
                         if prev_left_tip is not None:
                             dist = math.hypot(x - prev_left_tip[0], y - prev_left_tip[1])
+                            swipe_speed = math.hypot(x - prev_left_tip[0], y - prev_left_tip[1])  # use LEFT tip
                             if dist >= min_distance and len(left_trail_points) >= 3:
                                 left_slice_active = True
                         prev_left_tip = (x, y)
-                    
-                        # Draw Left Blade (e.g., Cyan/Blue)
-                        cv2.circle(frame, (x, y), 11, (255, 200, 0), -1) 
+
+                        cv2.circle(frame, (x, y), 11, (255, 200, 0), -1)
 
                     elif hand_label == 'Right':
-                        # Handle Right Hand
                         right_trail_points.append(((x, y), now_ms()))
                         current_right_tip = (x, y)
-                    
-                        # Movement Detection (Right)
+
                         if prev_right_tip is not None:
                             dist = math.hypot(x - prev_right_tip[0], y - prev_right_tip[1])
+                            swipe_speed = math.hypot(x - prev_right_tip[0], y - prev_right_tip[1])  # use RIGHT tip
                             if dist >= min_distance and len(right_trail_points) >= 3:
                                 right_slice_active = True
                         prev_right_tip = (x, y)
 
-                        # Draw Right Blade (e.g., Magenta/Red)
                         cv2.circle(frame, (x, y), 11, (0, 100, 255), -1)
+
 
     # Cleanup LEFT Trail
     left_trail_points = [
@@ -1043,6 +1059,7 @@ while running:
                         effects.append(Effect(f.x, f.y, food_sliced))
                         score += 3
 
+            
             if hit_any:
                 cv2.line(frame, p1, p2, (255, 0, 0), 4)
 
@@ -1059,33 +1076,27 @@ while running:
 
         game_settings_open = True
     
-    # ================= CURRENT DIFFICULTY =================
-    if danger_mode:
-        current_spawn_interval = danger_spawn_interval
-        chili_limit = danger_chili_limit
-    else:
-        current_spawn_interval = normal_spawn_interval
-        chili_limit = normal_chili_limit
-
     # ================= FOOD SPAWN =================
     spawn_timer += dt
-
+    #if health != 0 and spawn_timer >= spawn_interval and len(foods) < 5:
+    #if not game_paused:
+        #spawn_timer += dt
     if not is_paused:
         game_timer += dt
 
-    if not is_paused and health != 0 and spawn_timer >= current_spawn_interval and len(foods) < 5:
+    if not is_paused and health != 0 and spawn_timer >= spawn_interval and len(foods) < 5:
 
         if len(foods) <= max_food:
 
             rand = random.randint(1, 20)
 
-            if rand <= 5:
+            if rand <= 6:
                 foods.append(Food(siopao_frames, "siopao"))
 
-            elif rand <= 10:
+            elif rand <= 12:
                 foods.append(Food(siomai_frames, "siomai"))
 
-            elif rand <= 20 - chili_limit:
+            elif rand <= 18:
                 foods.append(Food(suman_frames, "suman"))
 
             else:
@@ -1094,6 +1105,9 @@ while running:
         spawn_timer = 0
 
     # ================= FOOD UPDATE =================
+    #for food in foods[:]:
+        #food.update()
+
     if not game_paused:
         for food in foods[:]:
             food.update()
@@ -1125,27 +1139,6 @@ while running:
 
     # ================= DRAW =================
     screen.blit(frame, (0, 0))
-
-    #DISPLAY ITO para sa difficulty mode
-    if danger_mode and pygame.time.get_ticks() % 500 < 250:
-        #warning_text = big_pixel_font.render("SPICY!", True, (255, 0, 0))
-        #outline = big_pixel_font.render("SPICY!", True, (0, 0, 0))
-
-        warning_text = pygame.font.Font(
-            "pixel_operator/PixelOperator-Bold.ttf", 50).render("SPICY!", True, (255, 0, 0))
-        outline = pygame.font.Font(
-            "pixel_operator/PixelOperator-Bold.ttf", 50).render("SPICY!", True, (0, 0, 0))
-
-        x = width // 2 - warning_text.get_width() // 2
-        y = 60
-
-        screen.blit(outline, (x - 3, y - 3))
-        screen.blit(outline, (x + 3, y + 3))
-        screen.blit(outline, (x - 3, y + 3))
-        screen.blit(outline, (x + 3, y - 3))
-
-        # draw main text
-        screen.blit(warning_text, (x, y))
 
     # =================== PAUSE OVERLAY =================
     if game_settings_open:
