@@ -218,6 +218,24 @@ paused_img = pygame.image.load("paused.png").convert_alpha()
 paused_img = pygame.transform.scale(paused_img, (819.2, 460.8))
 paused_rect = paused_img.get_rect(center=(width // 2, height // 2))
 
+#resume
+resume_img = pygame.image.load("Resume.png").convert_alpha()
+resume_img = pygame.transform.scale(resume_img, (200, 60))
+
+resume_hover_img = pygame.image.load("Resume1.png").convert_alpha()
+resume_hover_img = pygame.transform.scale(resume_hover_img, (200, 60))
+
+resume_rect = resume_img.get_rect(center=(width // 2- 100, height // 2 + 100))
+
+#Back to main menu
+BTMM_img = pygame.image.load("BTMM.png").convert_alpha()
+BTMM_img = pygame.transform.scale(BTMM_img, (200, 60))
+
+BTMM_hover_img = pygame.image.load("BTMM1.png").convert_alpha()
+BTMM_hover_img = pygame.transform.scale(BTMM_hover_img, (200, 60))
+
+BTMM_rect = BTMM_img.get_rect(center=(width // 2 + 100, height // 2 + 100))
+
 # Food Class
 class Food:
 
@@ -659,9 +677,10 @@ def main_menu():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if playbttn_rect.collidepoint(pygame.mouse.get_pos()):
 
-                    global game_paused, last_activity_time, game_timer
+                    global game_paused, game_settings_open, last_activity_time, game_timer
 
                     game_paused = False
+                    game_settings_open = False
                     last_activity_time = pygame.time.get_ticks()
                     game_timer = 0
 
@@ -754,9 +773,6 @@ prev_right_tip = None
 current_left_tip = None
 current_right_tip = None
 
-# Main Menu
-main_menu()
-
 # afk system variables
 afk_timeout = 7000  # 7 seconds in milliseconds
 game_paused = False
@@ -764,6 +780,11 @@ last_activity_time = pygame.time.get_ticks()
 
 #settings
 game_paused = False
+game_settings_open = False
+is_paused = game_paused or game_settings_open
+
+# Main Menu
+main_menu()
 
 # Main Game Loop
 while running:
@@ -771,13 +792,17 @@ while running:
     dt = clock.tick(fps)
     current_time = pygame.time.get_ticks()
 
+    # 🔥 FIX ADDED HERE (ONLY CHANGE)
+    is_paused = game_paused or game_settings_open
+
+
     # Inactivity checker
     if not game_paused and current_time - last_activity_time >= afk_timeout:
         game_paused = True
 
     # timer seconds 
-    if not game_paused:
-        game_timer += dt
+    #if not game_paused:
+        #game_timer += dt
     total_seconds = game_timer // 1000 # convert milliseconds to seconds
     game_timer_minutes = total_seconds // 60
     game_timer_seconds = total_seconds % 60
@@ -789,12 +814,18 @@ while running:
         break
 
     #sliced animation
-    for effect in effects[:]:
+    #for effect in effects[:]:
 
-        effect.update()
+        #effect.update()
 
-        if effect.finished:
-            effects.remove(effect)
+        #if effect.finished:
+            #effects.remove(effect)
+    if not is_paused:
+        for effect in effects[:]:
+            effect.update()
+
+            if effect.finished:
+                effects.remove(effect)
 
     #game exit button
     for event in pygame.event.get():
@@ -805,32 +836,34 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN:
 
             if settingsbttn_rect.collidepoint(pygame.mouse.get_pos()):
-                # Handle settings button click
-                 # reset game values
-                foods.clear()
-                effects.clear()
+                game_settings_open = True
+                #game_paused = True
+        
+        #settings paused panel aayusin pa 
+        if event.type == pygame.MOUSEBUTTONDOWN:
 
-                health = 3
-                score = 0
-                game_timer = 0
-                game_over_time = None
+            if game_settings_open:
 
-                # reset trails
-                left_trail_points.clear()
-                right_trail_points.clear()
+                if resume_rect.collidepoint(pygame.mouse.get_pos()):
+                    game_settings_open = False
+                    game_paused = False
+                    last_activity_time = pygame.time.get_ticks()
+            
+                elif BTMM_rect.collidepoint(pygame.mouse.get_pos()):
+                    foods.clear()
+                    effects.clear()
 
-                # return to menu
-                main_menu()
+                    health = 3
+                    score = 0
+                    game_timer = 0
+                    game_over_time = None
 
+                    left_trail_points.clear()
+                    right_trail_points.clear()
+
+                    main_menu()
+            
     #settings button hover
-    mouse_pos_play = pygame.mouse.get_pos()
-
-    if settingsbttn_rect.collidepoint(mouse_pos_play):
-        current_img = settingsbttn_hover_img
-    else:
-        current_img = settingsbttn_img
-
-    #game exit button hover
     mouse_pos_play = pygame.mouse.get_pos()
 
     if settingsbttn_rect.collidepoint(mouse_pos_play):
@@ -850,66 +883,67 @@ while running:
     result = detector.detect(mp_image)
 
     # ================= HAND TRACKING =================
-    slice_active = False
-    left_slice_active = False
-    right_slice_active = False
+    if not is_paused:
+        slice_active = False
+        left_slice_active = False
+        right_slice_active = False
 
-    if result.hand_landmarks and result.handedness:
+        if result.hand_landmarks and result.handedness:
     
-        # MediaPipe returns paired lists: landmarks[i] matches handedness[i]
-        for i, hand_landmarks in enumerate(result.hand_landmarks):
+            # MediaPipe returns paired lists: landmarks[i] matches handedness[i]
+            for i, hand_landmarks in enumerate(result.hand_landmarks):
             
-            # --- Hand Identification ---
-            # handedness[i][0] contains the highest probability label (e.g., 'Left', 'Right')
-            hand_label = result.handedness[i][0].category_name
+                # --- Hand Identification ---
+                # handedness[i][0] contains the highest probability label (e.g., 'Left', 'Right')
+                hand_label = result.handedness[i][0].category_name
             
-            # --- Geometry & Area Calculation ---
-            xs = [lm.x for lm in hand_landmarks]
-            ys = [lm.y for lm in hand_landmarks]
+                # --- Geometry & Area Calculation ---
+                xs = [lm.x for lm in hand_landmarks]
+                ys = [lm.y for lm in hand_landmarks]
 
-            hand_width = (max(xs) - min(xs)) * w
-            hand_height = (max(ys) - min(ys)) * h
-            area = hand_width * hand_height
+                hand_width = (max(xs) - min(xs)) * w
+                hand_height = (max(ys) - min(ys)) * h
+                area = hand_width * hand_height
 
-            # Threshold check
-            MIN_HAND_AREA = 25000 
+                # Threshold check
+                MIN_HAND_AREA = 25000 
             
-            if area > MIN_HAND_AREA:
-                last_activity_time = pygame.time.get_ticks()
-                index_tip = hand_landmarks[8] # Index 8 is the index finger tip
-                x = int(index_tip.x * w)
-                y = int(index_tip.y * h)
+                if area > MIN_HAND_AREA:
+                    last_activity_time = pygame.time.get_ticks()
+                    index_tip = hand_landmarks[8] # Index 8 is the index finger tip
+                    x = int(index_tip.x * w)
+                    y = int(index_tip.y * h)
 
-                # Logic based Left vs Right
-                if hand_label == 'Left':
-                    # Handle Left Hand
-                    left_trail_points.append(((x, y), now_ms()))
-                    current_left_tip = (x, y)
+                    # Logic based Left vs Right
+                    if hand_label == 'Left':
+                        # Handle Left Hand
+                        left_trail_points.append(((x, y), now_ms()))
+                        current_left_tip = (x, y)
                     
-                    # Movement Detection (Left)
-                    if prev_left_tip is not None:
-                        dist = math.hypot(x - prev_left_tip[0], y - prev_left_tip[1])
-                        if dist >= min_distance and len(left_trail_points) >= 3:
-                            left_slice_active = True
-                    prev_left_tip = (x, y)
+                        # Movement Detection (Left)
+                        if prev_left_tip is not None:
+                            dist = math.hypot(x - prev_left_tip[0], y - prev_left_tip[1])
+                            if dist >= min_distance and len(left_trail_points) >= 3:
+                                left_slice_active = True
+                        prev_left_tip = (x, y)
                     
-                    # Draw Left Blade (e.g., Cyan/Blue)
-                    cv2.circle(frame, (x, y), 11, (255, 200, 0), -1) 
+                        # Draw Left Blade (e.g., Cyan/Blue)
+                        cv2.circle(frame, (x, y), 11, (255, 200, 0), -1) 
 
-                elif hand_label == 'Right':
-                    # Handle Right Hand
-                    right_trail_points.append(((x, y), now_ms()))
-                    current_right_tip = (x, y)
+                    elif hand_label == 'Right':
+                        # Handle Right Hand
+                        right_trail_points.append(((x, y), now_ms()))
+                        current_right_tip = (x, y)
                     
-                    # Movement Detection (Right)
-                    if prev_right_tip is not None:
-                        dist = math.hypot(x - prev_right_tip[0], y - prev_right_tip[1])
-                        if dist >= min_distance and len(right_trail_points) >= 3:
-                            right_slice_active = True
-                    prev_right_tip = (x, y)
+                        # Movement Detection (Right)
+                        if prev_right_tip is not None:
+                            dist = math.hypot(x - prev_right_tip[0], y - prev_right_tip[1])
+                            if dist >= min_distance and len(right_trail_points) >= 3:
+                                right_slice_active = True
+                        prev_right_tip = (x, y)
 
-                    # Draw Right Blade (e.g., Magenta/Red)
-                    cv2.circle(frame, (x, y), 11, (0, 100, 255), -1)
+                        # Draw Right Blade (e.g., Magenta/Red)
+                        cv2.circle(frame, (x, y), 11, (0, 100, 255), -1)
 
     # Cleanup LEFT Trail
     left_trail_points = [
@@ -1038,7 +1072,13 @@ while running:
     
     # ================= FOOD SPAWN =================
     spawn_timer += dt
-    if health != 0 and spawn_timer >= spawn_interval and len(foods) < 5:
+    #if health != 0 and spawn_timer >= spawn_interval and len(foods) < 5:
+    #if not game_paused:
+        #spawn_timer += dt
+    if not is_paused:
+        game_timer += dt
+
+    if not is_paused and health != 0 and spawn_timer >= spawn_interval and len(foods) < 5:
 
         if len(foods) <= max_food:
 
@@ -1059,8 +1099,12 @@ while running:
         spawn_timer = 0
 
     # ================= FOOD UPDATE =================
-    for food in foods[:]:
-        food.update()
+    #for food in foods[:]:
+        #food.update()
+
+    if not game_paused:
+        for food in foods[:]:
+            food.update()
 
     # Remove foods that fell off screen
     foods = [
@@ -1089,6 +1133,10 @@ while running:
 
     # ================= DRAW =================
     screen.blit(frame, (0, 0))
+
+    # =================== PAUSE OVERLAY =================
+    if game_settings_open:
+        screen.blit(paused_img, paused_rect)
 
     # ================= TRAIL DRAW =================
     def draw_trails(trail_data, color):
@@ -1205,7 +1253,21 @@ while running:
             print(f"Final Score: {score}")
             main_menu()
 
-        
+    #paused panel when settings cliked
+    if game_settings_open:
+
+        # resume button hover
+        if resume_rect.collidepoint(pygame.mouse.get_pos()):
+            screen.blit(resume_hover_img, resume_rect)
+        else:
+            screen.blit(resume_img, resume_rect)
+
+        # back to menu button hover
+        if BTMM_rect.collidepoint(pygame.mouse.get_pos()):
+            screen.blit(BTMM_hover_img, BTMM_rect)
+        else:
+            screen.blit(BTMM_img, BTMM_rect)
+
     pygame.display.update()
 
 # ================= CLEANUP =================
