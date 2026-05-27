@@ -804,7 +804,7 @@ def main_menu():
                 )
 
                 score_text = entry_font.render(
-                    f"Score: {score}",
+                    f"{score}",
                     True,
                     (0,0, 0)
                 )
@@ -818,8 +818,9 @@ def main_menu():
                 y = start_y + i * 40
 
                 screen.blit(rank_text, (leaderboard_rect.x + 100, y+30))
-                screen.blit(score_text, (leaderboard_rect.x + 230, y+30))
-                screen.blit(time_text, (leaderboard_rect.x + 340, y+30))
+                score_x = leaderboard_rect.centerx - score_text.get_width() // 2
+                screen.blit(score_text, (score_x, y + 30))
+                screen.blit(time_text, (leaderboard_rect.x + 320, y+30))
 
         pygame.display.update()
 
