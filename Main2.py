@@ -983,7 +983,7 @@ def get_username():
                 exit()
 
             # Mouse click
-            if event.type == pygame.MOUSEBUTTONDOWN and username_text != "":
+            if event.type == pygame.MOUSEBUTTONDOWN:
 
                 # Activate textbox
                 active = input_box.collidepoint(event.pos)
@@ -991,8 +991,7 @@ def get_username():
                 color = color_active if active else color_inactive
 
                 # Confirm button
-                if confirm_rect.collidepoint(event.pos) :
-
+                if confirm_rect.collidepoint(event.pos):
                     if username_text.strip() != "":
                         return username_text.strip()
 
@@ -1013,7 +1012,7 @@ def get_username():
                 else:
 
                     # Limit username length
-                    if len(username_text) < 12:
+                    if len(username_text) < 7:
 
                         # Allow only letters, numbers, underscore
                         if event.unicode.isalnum() or event.unicode == "_":
