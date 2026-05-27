@@ -8,27 +8,26 @@ import math
 import os
 import psycopg2
 from PIL import Image
+from tkinter import messagebox, Tk
 
 # Database connection
 DB_URL = "postgresql://neondb_owner:npg_yAHXZ0iM8ORI@ep-proud-haze-ao93abr3-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 conn = psycopg2.connect(DB_URL)
 cursor = conn.cursor()
 
-
 #Configs
 width, height = 1280, 720
 fps = 60
 food_spawn_interval_ms = 900
 
-gravity = 0.4
+gravity = 0.3
 intial_vy_min, intial_vy_max = 12, 18
 
-#Implement swipe longevity here
 #Particle system for swipe longevity or effects
-particle_longevity_ms = 700
+particle_longevity_ms = 500
 
 #max food items on screen at once, to prevent lag
-max_food = 5
+max_food = 7
 
 #food dispawning area
 rect_x = 0
@@ -37,16 +36,9 @@ rect_width = width
 rect_height = 1
 ground_rect = pygame.Rect(rect_x, rect_y, rect_width, rect_height)
 
-# Game timer (increment)
-game_timer = 0
-
-#health
 health = 3
-
-#for game over timer
+game_timer = 0
 game_over_time = None
-
-#score
 score = 0
 
 #score background
@@ -86,45 +78,137 @@ options = vision.HandLandmarkerOptions(
 
 detector = vision.HandLandmarker.create_from_options(options)
 
+# Permission request before accessing the camera
+def request_camera_permission():
+    root = Tk()
+    root.withdraw() # Hides the tiny default blank window
+    
+    # Show the custom confirmation popup box
+    permission = messagebox.askyesno(
+        "Camera Permission Required", 
+        "\"Siopao, Siomai, Suman Slasher\" uses your webcam to detect hand movements.\n\n"
+        "Do you grant permission to open the camera?"
+    )
+    root.destroy()
+    return permission
+
+# Check permission before doing anything else
+if not request_camera_permission():
+    print("Camera permission denied. Exiting game.")
+    import sys
+    sys.exit()
+
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
-# Database
-
+# DATABASE SETUP
 def init_db():
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS leaderboards (
-            id SERIAL PRIMARY KEY,
-            username TEXT,
-            score INT,
-            game_time TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    conn.commit()
 
-init_db()
+    global conn, cursor
 
+    try:
+
+        # reconnect if connection is closed
+        if conn.closed != 0:
+            conn = psycopg2.connect(DB_URL)
+            conn.autocommit = True
+            cursor = conn.cursor()
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS leaderboards (
+                id SERIAL PRIMARY KEY,
+                username TEXT,
+                score INT,
+                game_time TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        conn.commit()
+
+        print("Database initialized successfully.")
+
+    except Exception as e:
+        print("Database Initialization Error:", e)
+
+
+# SAVE SCORE FUNCTION
 def save_score(username, score, game_time):
-    cursor.execute("""
-        INSERT INTO leaderboards (username, score, game_time)
-        VALUES (%s, %s, %s)
-    """, (username, score, game_time))
 
-    conn.commit()
+    global conn, cursor
 
+    try:
+
+        # reconnect if connection closed
+        if conn.closed != 0:
+
+            conn = psycopg2.connect(DB_URL)
+            conn.autocommit = True
+            cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO leaderboards (username, score, game_time)
+            VALUES (%s, %s, %s)
+        """, (username, score, game_time))
+
+        conn.commit()
+
+        print("Score saved successfully.")
+
+    except Exception as e:
+
+        print("Database Save Error:", e)
+
+        # reconnect attempt
+        try:
+
+            conn = psycopg2.connect(DB_URL)
+            conn.autocommit = True
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                INSERT INTO leaderboards (username, score, game_time)
+                VALUES (%s, %s, %s)
+            """, (username, score, game_time))
+
+            conn.commit()
+
+            print("Reconnected and score saved.")
+
+        except Exception as reconnect_error:
+            print("Reconnect failed:", reconnect_error)
+
+
+# GET LEADERBOARD FUNCTION
 def get_leaderboard():
-    cursor.execute("""
-        SELECT username, score, game_time, created_at
-        FROM leaderboards
-        ORDER BY score DESC, created_at ASC
-        LIMIT 10
-    """)
 
-    return cursor.fetchall()
+    global conn, cursor
 
+    try:
 
+        # reconnect if connection closed
+        if conn.closed != 0:
+
+            conn = psycopg2.connect(DB_URL)
+            conn.autocommit = True
+            cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT username, score, game_time
+            FROM leaderboards
+            ORDER BY score DESC, created_at ASC
+            LIMIT 10
+        """)
+
+        return cursor.fetchall()
+
+    except Exception as e:
+
+        print("Leaderboard Fetch Error:", e)
+
+        return []
+    
 # GIF Animation
 def load_gif_frames(path, scale_size=None):
 
@@ -154,6 +238,8 @@ def load_gif_frames(path, scale_size=None):
         pass
 
     return frames
+
+final_time_record = "0:00"
 
 # GIF Images
 siopao_frames = load_gif_frames("Siopao.gif", (100, 100))
@@ -198,6 +284,43 @@ damageicon2_rect = damageicon2_img.get_rect(topright=(width - 100, 0))
 # Sliced GIF Animations
 chili_sliced = load_gif_frames("Chili slashed.gif", (100, 100))
 food_sliced = load_gif_frames("Food sliced.gif", (100, 100))
+
+#Settings Icon
+settingsbttn_img = pygame.image.load("Settings.png").convert_alpha()
+settingsbttn_img = pygame.transform.scale(settingsbttn_img, (70, 70))
+
+settingsbttn_hover_img = pygame.image.load("Settings1.png").convert_alpha()
+settingsbttn_hover_img = pygame.transform.scale(settingsbttn_hover_img, (70, 70))
+
+settingsbttn_rect = settingsbttn_img.get_rect(topleft=(1, 1))
+
+#GameOver
+gameover_img = pygame.image.load("GameOver.png").convert_alpha()
+gameover_img = pygame.transform.scale(gameover_img, (1024, 576))
+gameover_rect = gameover_img.get_rect(center=(width // 2, height // 2 - 25))
+
+#Paused
+paused_img = pygame.image.load("paused.png").convert_alpha()
+paused_img = pygame.transform.scale(paused_img, (819.2, 460.8))
+paused_rect = paused_img.get_rect(center=(width // 2, height // 2))
+
+#resume
+resume_img = pygame.image.load("Resume.png").convert_alpha()
+resume_img = pygame.transform.scale(resume_img, (200, 60))
+
+resume_hover_img = pygame.image.load("Resume1.png").convert_alpha()
+resume_hover_img = pygame.transform.scale(resume_hover_img, (200, 60))
+
+resume_rect = resume_img.get_rect(center=(width // 2 - 150, height // 2 + 100))
+
+#Back to main menu
+BTMM_img = pygame.image.load("BTMM.png").convert_alpha()
+BTMM_img = pygame.transform.scale(BTMM_img, (200, 60))
+
+BTMM_hover_img = pygame.image.load("BTMM1.png").convert_alpha()
+BTMM_hover_img = pygame.transform.scale(BTMM_hover_img, (200, 60))
+
+BTMM_rect = BTMM_img.get_rect(center=(width // 2 + 150, height // 2 + 100))
 
 # Food Class
 class Food:
@@ -306,7 +429,7 @@ class Effect:
     def draw(self, screen):
         screen.blit(self.image, self.rect)
 
-#about screen
+# About screen
 def about_screen():
 
     # Load scroll frames
@@ -377,16 +500,11 @@ def about_screen():
 
     animation_done = False
 
-    # Fonts
-    # title_font = pygame.font.SysFont("Times New Roman", 48)
-    # text_font = pygame.font.SysFont("Arial", 24)
-    # warning_font = pygame.font.SysFont("Arial", 26, bold=True)
     title_font = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 75)
     text_font = pygame.font.Font("pixel_operator/PixelOperator.ttf", 24)
     warning_font = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 26)
 
-    #next scroll page button
-    #scroll page navigation
+    #Scroll andnext scroll page button
     nextscrollbttn_img = pygame.image.load("Next.png").convert_alpha()
     nextscrollbttn_img = pygame.transform.scale(nextscrollbttn_img, (50, 50))
 
@@ -404,7 +522,7 @@ def about_screen():
 
     backscrollbttn_rect = backscrollbttn_img.get_rect(center= (600, 670))
 
-    # FIX: initialize current images (IMPORTANT)
+    # initialize current images
     current_next_img = nextscrollbttn_img
     current_back_img = backscrollbttn_img
     current_exit_img = gameexitbttn_img
@@ -510,15 +628,11 @@ def about_screen():
             frame_timer += 1
 
             if frame_timer >= frame_delay:
-
                 current_frame += 1
-
                 frame_timer = 0
 
                 if current_frame >= len(scroll_frames):
-
                     current_frame = len(scroll_frames) - 1
-
                     animation_done = True
 
         # Draw current frame
@@ -530,7 +644,7 @@ def about_screen():
 
         screen.blit(scroll_img, scroll_rect)
 
-        # ================= SHOW TEXT =================
+        # show text 
         if animation_done:
 
             pages_block = pages[current_page]
@@ -578,14 +692,62 @@ def about_screen():
 
         pygame.display.update()
 
+# Training data: [distance_to_center, swipe_speed, fruit_radius]
+X_train = [
+    [5, 30, 20],   # close, fast swipe, medium fruit - hit
+    [25, 10, 15],  # far, slow swipe, small fruit - miss
+    [8, 40, 25],   # close, fast swipe, large fruit - hit
+]
+y_train = [1, 0, 1]  # 1 = hit, 0 = miss
+
+def knn_predict(X_train, y_train, new_point, k=3):
+    # Compute distances between new_point and all training samples
+    distances = []
+    for i, x in enumerate(X_train):
+        dist = math.sqrt(sum((a - b) ** 2 for a, b in zip(x, new_point)))
+        distances.append((dist, y_train[i]))
+    
+    # Sort by distance
+    distances.sort(key=lambda d: d[0])
+    
+    # Take k nearest neighbors
+    neighbors = [label for _, label in distances[:k]]
+    
+    # Majority vote
+    return 1 if neighbors.count(1) > neighbors.count(0) else 0
+
 def main_menu():
     screen = pygame.display.set_mode((width, height))
-    font = pygame.font.SysFont("Arial", 25)
 
     button_size = 200, 40
 
+    #leaderbaord
+    show_leaderboard = False
+
+    ldicon_img = pygame.image.load("leaderboardIcon.png")
+    ldicon_img = pygame.transform.scale(ldicon_img, (50, 50))
+    ldicon_rect = ldicon_img.get_rect(topright=(width - 10, 10))
+
+    leaderboard_img = pygame.image.load("leaderboard panel.png")
+    leaderboard_img = pygame.transform.scale(leaderboard_img, (500, 560))
+    leaderboard_rect = leaderboard_img.get_rect(topright = (width, 100))
+
+    #leaderboards labels
+    namelb_img = pygame.image.load("NAME.png")
+    namelb_img = pygame.transform.scale(namelb_img, (48, 24))
+    namelb_rect = namelb_img.get_rect(topright = (973, 210))
+
+    scorelb_img = pygame.image.load("SCORELB.png")
+    scorelb_img = pygame.transform.scale(scorelb_img, (48, 24))
+    scorelb_rect = scorelb_img.get_rect(topright = (1075, 210))
+
+    timelb_img = pygame.image.load("TIME.png")
+    timelb_img = pygame.transform.scale(timelb_img, (48, 24))
+    timelb_rect = timelb_img.get_rect(topright = (1142, 210))
+
+    #game name logo
     namelogo_img= pygame.image.load("NameLogo.png")
-    namelogo_img= pygame.transform.scale(namelogo_img, (400, 320))
+    namelogo_img= pygame.transform.scale(namelogo_img, (400, 360))
     namelogo_rect = namelogo_img.get_rect(center = (640, 170))
 
     #play button
@@ -628,18 +790,42 @@ def main_menu():
                 pygame.quit()
                 exit()
         
-            #play button
+            #play button (modified with pause reset)
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if playbttn_rect.collidepoint(pygame.mouse.get_pos()):
+
+                    global game_paused, game_settings_open
+                    global last_activity_time, game_timer
+                    global danger_timer, danger_mode
+                    global next_danger_time, next_score_trigger
+
+                    game_paused = False
+                    game_settings_open = False
+                    last_activity_time = pygame.time.get_ticks()
+
+                    # Reset timers
+                    game_timer = 0
+                    danger_timer = 0
+
+                    # Reset danger mode
+                    danger_mode = False
+                    next_danger_time = 30000
+                    next_score_trigger = 100
+
+                    get_username()
+
                     return
+
                 elif aboutbttn_rect.collidepoint(pygame.mouse.get_pos()):
                     about_screen()
                 elif exitbttn_rect.collidepoint(pygame.mouse.get_pos()):
                     pygame.quit()
                     exit()
+                elif ldicon_rect.collidepoint(pygame.mouse.get_pos()):
+                    show_leaderboard = not show_leaderboard
 
         screen.fill((0, 0, 0))      # optional background color
-        screen.blit(flipped_frame, (0, 0))  # camera FIRST layer
+        screen.blit(flipped_frame, (0, 0))  # camera
         
         #play button hover
         mouse_pos_play = pygame.mouse.get_pos()
@@ -673,6 +859,194 @@ def main_menu():
 
         screen.blit(namelogo_img, namelogo_rect)
 
+        screen.blit(ldicon_img, ldicon_rect)
+        
+        # leaderboard panel display
+        if show_leaderboard:
+
+            screen.blit(leaderboard_img, leaderboard_rect)
+            pygame.draw.rect(screen, (0, 200, 0), ldicon_rect, 5)
+
+            leaderboard_data = get_leaderboard()
+
+            entry_font = pygame.font.Font(
+                "pixel_operator/PixelOperator.ttf", 20
+            )
+
+            # starting y-position
+            start_y = leaderboard_rect.y + 120
+
+            # display leaderboard entries
+            for i, entry in enumerate(leaderboard_data):
+
+                username, score, game_time = entry
+                rank_text = entry_font.render(f"{i+1}. {username}", True, (0,0,0))
+                score_text = entry_font.render(f"{score}", True, (0,0, 0))
+                time_text = entry_font.render(f"{game_time}", True, (0, 0,0))
+                y = start_y + i * 40
+
+                screen.blit(rank_text, (leaderboard_rect.x + 120, y+15))
+                score_x = leaderboard_rect.centerx - score_text.get_width() // 2 + 10
+                screen.blit(score_text, (score_x, y + 15))
+                screen.blit(time_text, (leaderboard_rect.x + 320, y+15))
+                
+                screen.blit(namelb_img, namelb_rect)
+                screen.blit(scorelb_img, scorelb_rect)
+                screen.blit(timelb_img, timelb_rect)
+
+        pygame.display.update()
+
+def flash():
+    duration = 500
+    start_time = now_ms()
+
+    while True:
+        surface = pygame.Surface((width, height), pygame.SRCALPHA)
+        elapsed = now_ms() - start_time
+        if elapsed >= duration:
+            break
+        progress = elapsed / duration 
+        if progress < 0.3:
+            alpha = int((progress / 0.3) * 60)
+        elif progress < 0.7:
+            alpha = 80  # ~0.5 opacity
+        else:
+            alpha = int((1 - (progress - 0.7) / 0.3) * 60)
+        surface.fill((200, 0, 0, alpha))
+        screen.blit(surface, (0, 0))
+        pygame.display.update()
+        clock.tick(60)
+
+username_text = ""
+
+# for settings
+game_paused = False
+game_settings_open = False
+is_paused = game_paused or game_settings_open
+
+# display username input textbox
+def get_username():
+
+    global username_text
+
+    input_box = pygame.Rect(width // 2 - 100, height // 2, 200, 40)
+
+    color_inactive = pygame.Color('lightskyblue3')
+    color_active = pygame.Color('dodgerblue2')
+    color = color_inactive
+
+    active = False
+
+    font = pygame.font.Font("pixel_operator/PixelOperator.ttf", 24)
+
+    username_img = pygame.image.load("Username.png").convert_alpha()
+    username_img = pygame.transform.scale(username_img, (500, 300))
+    username_rect = username_img.get_rect(center=(width // 2, height // 2))
+
+    confirm_img = pygame.image.load("Play1.png").convert_alpha()
+    confirm_img = pygame.transform.scale(confirm_img, (160, 50))
+
+    confirm_hover_img = pygame.image.load("Play.png").convert_alpha()
+    confirm_hover_img = pygame.transform.scale(confirm_hover_img, (160, 50))
+
+    confirm_rect = confirm_img.get_rect(
+        center=(width // 2, height // 2 + 90)
+    )
+
+    while True:
+
+        clock.tick(60)
+
+        success, frame = cap.read()
+
+        if not success:
+            continue
+
+        # Camera background
+        frame = cv2.flip(frame, 1)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        frame = pygame.surfarray.make_surface(frame.swapaxes(0, 1))
+        frame = pygame.transform.scale(frame, (width, height))
+
+        screen.blit(frame, (0, 0))
+
+        # Dark overlay
+        overlay = pygame.Surface((width, height))
+        overlay.set_alpha(150)
+        overlay.fill((0, 0, 0))
+
+        screen.blit(overlay, (0, 0))
+
+        # Username panel
+        screen.blit(username_img, username_rect)
+
+        for event in pygame.event.get():
+
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+
+            # Mouse click
+            if event.type == pygame.MOUSEBUTTONDOWN:
+
+                # Activate textbox
+                active = input_box.collidepoint(event.pos)
+
+                color = color_active if active else color_inactive
+
+                # Confirm button
+                if confirm_rect.collidepoint(event.pos):
+                    game_settings_open = False
+
+                    if username_text.strip() != "":
+                        return username_text.strip()
+                        
+
+            # Keyboard input
+            if event.type == pygame.KEYDOWN and active:
+
+                # Enter key
+                if event.key == pygame.K_RETURN:
+
+                    if username_text.strip() != "":
+                        return username_text.strip()
+
+                # Backspace
+                elif event.key == pygame.K_BACKSPACE:
+                    username_text = username_text[:-1]
+
+                # Typing
+                else:
+
+                    # Limit username length
+                    if len(username_text) < 7:
+
+                        # Allow only letters, numbers, underscore
+                        if event.unicode.isalnum() or event.unicode == "_":
+                            username_text += event.unicode
+
+        # Draw input box
+        pygame.draw.rect(screen, color, input_box, 3)
+
+        # Render username text
+        txt_surface = font.render(
+            username_text,
+            True,
+            (0,0,0)
+        )
+
+        screen.blit(
+            txt_surface,
+            (input_box.x + 10, input_box.y + 8)
+        )
+
+        # Confirm button hover
+        if confirm_rect.collidepoint(pygame.mouse.get_pos()):
+            screen.blit(confirm_hover_img, confirm_rect)
+        else:
+            screen.blit(confirm_img, confirm_rect)
+
         pygame.display.update()
 
 # Main Game Variables
@@ -689,19 +1063,69 @@ prev_right_tip = None
 current_left_tip = None
 current_right_tip = None
 
-# Main Menu
+# difficulty setting
+danger_mode = False
+
+danger_duration = 10000
+danger_timer = 0
+
+next_danger_time = 30000
+next_score_trigger = 100
+
+# Spawn speed
+normal_spawn_interval = 250
+danger_spawn_interval = 150
+
+normal_chili_chance = 2
+danger_chili_chance = 8
+
+# Chili chances
+normal_chili_limit = 3
+danger_chili_limit = 8
+
+# afk system variables
+afk_timeout = 7000  # 7 seconds in milliseconds
+game_paused = False
+last_activity_time = pygame.time.get_ticks()
+
 main_menu()
 # Main Game Loop
 while running:
 
     dt = clock.tick(fps)
+    current_time = pygame.time.get_ticks()
 
-    # timer seconds 
-    game_timer += dt
+    is_paused = game_paused or game_settings_open
+
+    # Inactivity checker
+    if not game_paused and current_time - last_activity_time >= afk_timeout:
+        game_settings_open = True
+
     total_seconds = game_timer // 1000 # convert milliseconds to seconds
     game_timer_minutes = total_seconds // 60
     game_timer_seconds = total_seconds % 60
     final_time = f"{game_timer_minutes:02.0f}:{game_timer_seconds%60:02.0f}"
+
+    # DIFFICULTY SCALING
+    if not danger_mode:
+
+        # Time-based trigger
+        if game_timer >= next_danger_time:
+            danger_mode = True
+            danger_timer = pygame.time.get_ticks()
+
+            next_danger_time += 30000
+
+        # Score-based trigger
+        elif score >= next_score_trigger:
+            danger_mode = True
+            danger_timer = pygame.time.get_ticks()
+
+            next_score_trigger += 100
+
+    if not is_paused and danger_mode:
+        if pygame.time.get_ticks() - danger_timer >= danger_duration:
+            danger_mode = False
 
     success, frame = cap.read()
 
@@ -709,12 +1133,12 @@ while running:
         break
 
     #sliced animation
-    for effect in effects[:]:
+    if not is_paused:
+        for effect in effects[:]:
+            effect.update()
 
-        effect.update()
-
-        if effect.finished:
-            effects.remove(effect)
+            if effect.finished:
+                effects.remove(effect)
 
     #game exit button
     for event in pygame.event.get():
@@ -724,24 +1148,48 @@ while running:
 
         if event.type == pygame.MOUSEBUTTONDOWN:
 
-            if gameexitbttn_rect.collidepoint(pygame.mouse.get_pos()):
-                game_timer = 0
-                health = 3
-                score = 0
-                print("Returning to Main Menu...")
-                print(f"Final Time: {final_time}")
-                print(f"Final Score: {score}")
-                main_menu()
+            if settingsbttn_rect.collidepoint(pygame.mouse.get_pos()):
+                game_settings_open = True
+                #game_paused = True
+        
+        #settings paused panel with buttons
+        if event.type == pygame.MOUSEBUTTONDOWN:
 
-    #game exit button hover
+            if game_settings_open:
+
+                if resume_rect.collidepoint(pygame.mouse.get_pos()):
+                    game_settings_open = False
+                    game_paused = False
+                    last_activity_time = pygame.time.get_ticks()
+            
+                elif BTMM_rect.collidepoint(pygame.mouse.get_pos()):
+                    foods.clear()
+                    effects.clear()
+
+                    health = 3
+                    score = 0
+                    game_timer = 0
+                    game_over_time = None
+
+                    left_trail_points.clear()
+                    right_trail_points.clear()
+
+                    danger_mode = False
+                    danger_timer = 0
+                    next_danger_time = 30000
+                    next_score_trigger = 100
+
+                    main_menu()
+            
+    #settings button hover
     mouse_pos_play = pygame.mouse.get_pos()
 
-    if gameexitbttn_rect.collidepoint(mouse_pos_play):
-        current_img = gameexitbttn_hover_img
+    if settingsbttn_rect.collidepoint(mouse_pos_play):
+        current_img = settingsbttn_hover_img
     else:
-        current_img = gameexitbttn_img
+        current_img = settingsbttn_img
 
-    # ================= CAMERA =================
+    #CAMERA 
     frame = cv2.flip(frame, 1)
 
     h, w, _ = frame.shape
@@ -752,80 +1200,76 @@ while running:
 
     result = detector.detect(mp_image)
 
-    # ================= HAND TRACKING =================
-    slice_active = False
-    left_slice_active = False
-    right_slice_active = False
+    #HAND TRACKING
+    if not is_paused:
+        slice_active = False
+        left_slice_active = False
+        right_slice_active = False
 
-    if result.hand_landmarks and result.handedness:
+        if result.hand_landmarks and result.handedness:
     
-        # MediaPipe returns paired lists: landmarks[i] matches handedness[i]
-        for i, hand_landmarks in enumerate(result.hand_landmarks):
+            # MediaPipe returns paired lists: landmarks[i] matches handedness[i]
+            for i, hand_landmarks in enumerate(result.hand_landmarks):
             
-            # --- Hand Identification ---
-            # handedness[i][0] contains the highest probability label (e.g., 'Left', 'Right')
-            hand_label = result.handedness[i][0].category_name
+                # Hand Identification
+                # handedness[i][0] contains the highest probability label (e.g., 'Left', 'Right')
+                hand_label = result.handedness[i][0].category_name
             
-            # --- Geometry & Area Calculation ---
-            xs = [lm.x for lm in hand_landmarks]
-            ys = [lm.y for lm in hand_landmarks]
+                # Geometry & Area Calculation
+                xs = [lm.x for lm in hand_landmarks]
+                ys = [lm.y for lm in hand_landmarks]
 
-            hand_width = (max(xs) - min(xs)) * w
-            hand_height = (max(ys) - min(ys)) * h
-            area = hand_width * hand_height
+                hand_width = (max(xs) - min(xs)) * w
+                hand_height = (max(ys) - min(ys)) * h
+                area = hand_width * hand_height
 
-            # Threshold check
-            MIN_HAND_AREA = 25000 
+                # Threshold check
+                MIN_HAND_AREA = 25000 
             
-            if area > MIN_HAND_AREA:
-                index_tip = hand_landmarks[8] # Index 8 is the index finger tip
-                x = int(index_tip.x * w)
-                y = int(index_tip.y * h)
+                if area > MIN_HAND_AREA:
+                    last_activity_time = pygame.time.get_ticks()
+                    index_tip = hand_landmarks[8] # Index 8 is the index finger tip
+                    x = int(index_tip.x * w)
+                    y = int(index_tip.y * h)
 
-                # --- Branch Logic based on Left vs Right ---
-                if hand_label == 'Left':
-                    # Handle Left Hand
-                    left_trail_points.append(((x, y), now_ms()))
-                    current_left_tip = (x, y)
-                    
-                    # Movement Detection (Left)
-                    if prev_left_tip is not None:
-                        dist = math.hypot(x - prev_left_tip[0], y - prev_left_tip[1])
-                        if dist >= min_distance and len(left_trail_points) >= 3:
-                            left_slice_active = True
-                    prev_left_tip = (x, y)
-                    
-                    # Draw Left Blade (e.g., Cyan/Blue)
-                    cv2.circle(frame, (x, y), 11, (255, 200, 0), -1) 
+                    # Logic based Left vs Right
+                    if hand_label == 'Left':
+                        left_trail_points.append(((x, y), now_ms()))
+                        current_left_tip = (x, y)
 
-                elif hand_label == 'Right':
-                    # Handle Right Hand
-                    right_trail_points.append(((x, y), now_ms()))
-                    current_right_tip = (x, y)
-                    
-                    # Movement Detection (Right)
-                    if prev_right_tip is not None:
-                        dist = math.hypot(x - prev_right_tip[0], y - prev_right_tip[1])
-                        if dist >= min_distance and len(right_trail_points) >= 3:
-                            right_slice_active = True
-                    prev_right_tip = (x, y)
+                        if prev_left_tip is not None:
+                            dist = math.hypot(x - prev_left_tip[0], y - prev_left_tip[1])
+                            swipe_speed = math.hypot(x - prev_left_tip[0], y - prev_left_tip[1])
+                            if dist >= min_distance and len(left_trail_points) >= 3:
+                                left_slice_active = True
+                        prev_left_tip = (x, y)
 
-                    # Draw Right Blade (e.g., Magenta/Red)
-                    cv2.circle(frame, (x, y), 11, (0, 100, 255), -1)
+                        cv2.circle(frame, (x, y), 11, (255, 200, 0), -1)
+
+                    elif hand_label == 'Right':
+                        right_trail_points.append(((x, y), now_ms()))
+                        current_right_tip = (x, y)
+
+                        if prev_right_tip is not None:
+                            dist = math.hypot(x - prev_right_tip[0], y - prev_right_tip[1])
+                            swipe_speed = math.hypot(x - prev_right_tip[0], y - prev_right_tip[1])
+                            if dist >= min_distance and len(right_trail_points) >= 3:
+                                right_slice_active = True
+                        prev_right_tip = (x, y)
+
+                        cv2.circle(frame, (x, y), 11, (0, 100, 255), -1)
 
     # Cleanup LEFT Trail
     left_trail_points = [
         (point, t)
         for point, t in left_trail_points
-        if now_ms() - t < particle_longevity_ms
-    ]
+        if now_ms() - t < particle_longevity_ms]
 
     # Cleanup RIGHT Trail
     right_trail_points = [
         (point, t)
         for point, t in right_trail_points
-        if now_ms() - t < particle_longevity_ms
-    ]
+        if now_ms() - t < particle_longevity_ms]
 
     # Limit Lengths
     if len(left_trail_points) > trail_length:
@@ -840,8 +1284,8 @@ while running:
 
     if current_right_tip is not None:
         prev_right_tip = current_right_tip
-    # ================= SLICING LOGIC =================
 
+    # SLICING LOGIC
     def check_slice_path(trail_points):
         global health, score, effects, foods
 
@@ -863,14 +1307,13 @@ while running:
 
             hit_any = False
             for f in foods:
-                if not f.sliced and segment_circle_intersection(
-                    p1, p2, (f.x, f.y), f.radius + 25
-                ):
+                if not f.sliced and segment_circle_intersection(p1, p2, (f.x, f.y), f.radius + 25):
                     f.sliced = True
                     hit_any = True
 
                     if f.foodtype == "chili":
                         effects.append(Effect(f.x, f.y, chili_sliced))
+                        flash()
                         health -= 1
                     elif f.foodtype == "siopao":
                         effects.append(Effect(f.x, f.y, food_sliced))
@@ -881,7 +1324,7 @@ while running:
                     elif f.foodtype == "suman":
                         effects.append(Effect(f.x, f.y, food_sliced))
                         score += 3
-
+            
             if hit_any:
                 cv2.line(frame, p1, p2, (255, 0, 0), 4)
 
@@ -893,37 +1336,46 @@ while running:
     if right_slice_active:
         check_slice_path(right_trail_points)
 
-    # ================= FOOD SPAWN =================
+    # Display if the game is paused due to inactivity
+    if game_paused:
+        game_settings_open = True
+    
+    # DIFFICULTY UPDATES TO CURRENT
+    if danger_mode:
+        current_spawn_interval = danger_spawn_interval
+        chili_limit = danger_chili_limit
+    else:
+        current_spawn_interval = normal_spawn_interval
+        chili_limit = normal_chili_limit
+
+    # FOOD SPAWN 
     spawn_timer += dt
-    if health != 0 and spawn_timer >= spawn_interval and len(foods) < 5:
 
+    if not is_paused:
+        game_timer += dt
+
+    if not is_paused and health != 0 and spawn_timer >= current_spawn_interval and len(foods) < 5:
         if len(foods) <= max_food:
-
             rand = random.randint(1, 20)
 
-            if rand <= 6:
+            if rand <= 5:
                 foods.append(Food(siopao_frames, "siopao"))
-
-            elif rand <= 12:
+            elif rand <= 10:
                 foods.append(Food(siomai_frames, "siomai"))
-
-            elif rand <= 18:
+            elif rand <= 20 - chili_limit:
                 foods.append(Food(suman_frames, "suman"))
-
             else:
                 foods.append(Food(chili_frames, "chili"))
 
         spawn_timer = 0
 
-    # ================= FOOD UPDATE =================
-    for food in foods[:]:
-        food.update()
+    # FOOD UPDATE 
+    if not game_paused:
+        for food in foods[:]:
+            food.update()
 
     # Remove foods that fell off screen
-    foods = [
-        f for f in foods
-        if not f.sliced and f.y < height + 100
-    ]
+    foods = [f for f in foods if not f.sliced and f.y < height + 100]
 
     foods = [
         food for food in foods
@@ -935,19 +1387,37 @@ while running:
         ).colliderect(ground_rect)
     ]
 
-    # ================= CONVERT FRAME =================
+    # CONVERT FRAME 
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-    frame = pygame.surfarray.make_surface(
-        frame.swapaxes(0, 1)
-    )
-
+    frame = pygame.surfarray.make_surface(frame.swapaxes(0, 1))
     frame = pygame.transform.scale(frame, (width, height))
 
-    # ================= DRAW =================
+    # DRAW 
     screen.blit(frame, (0, 0))
 
-    # ================= TRAIL DRAW =================
+    #DISPLAY ITO para sa difficulty mode
+    if danger_mode and pygame.time.get_ticks() % 500 < 250:
+        warning_text = pygame.font.Font(
+            "pixel_operator/PixelOperator-Bold.ttf", 50).render("SPICY!", True, (255, 0, 0))
+        outline = pygame.font.Font(
+            "pixel_operator/PixelOperator-Bold.ttf", 50).render("SPICY!", True, (0, 0, 0))
+
+        x = width // 2 - warning_text.get_width() // 2
+        y = 60
+
+        screen.blit(outline, (x - 3, y - 3))
+        screen.blit(outline, (x + 3, y + 3))
+        screen.blit(outline, (x - 3, y + 3))
+        screen.blit(outline, (x + 3, y - 3))
+
+        # draw main text
+        screen.blit(warning_text, (x, y))
+
+    # PAUSE OVERLAY 
+    if game_settings_open:
+        screen.blit(paused_img, paused_rect)
+
+    # TRAIL DRAW 
     def draw_trails(trail_data, color):
         if len(trail_data) > 1:
             trail_surface = pygame.Surface((width, height), pygame.SRCALPHA)
@@ -960,10 +1430,7 @@ while running:
                 alpha = int(255 * life_ratio)
                 thickness = max(1, int(13 * life_ratio))
                 
-                pygame.draw.line(
-                    trail_surface,
-                    (*color, alpha), p1, p2, thickness
-                )
+                pygame.draw.line(trail_surface, (*color, alpha), p1, p2, thickness)
             screen.blit(trail_surface, (0, 0))
 
     # Left Trail (Cyan)
@@ -972,11 +1439,10 @@ while running:
     # Right Trail (Orange)
     draw_trails(right_trail_points, (255, 140, 0))
 
-    # ================= BUTTON =================
-    screen.blit(current_img, gameexitbttn_rect)
-    pygame.draw.rect(screen, (255, 0, 0), gameexitbttn_rect, 2)
+    # BUTTON
+    screen.blit(current_img, settingsbttn_rect)
 
-    # ================= HEALTH DISPLAY =================
+    # HEALTH DISPLAY 
     if health == 3:
         screen.blit(healthicon_img, healthicon_rect)
         screen.blit(healthicon1_img, healthicon1_rect)
@@ -995,42 +1461,43 @@ while running:
     #draw ground
     pygame.draw.rect(screen, (0, 200, 0), ground_rect)
 
-    # ================= DRAW FOOD =================
+    # DRAW FOOD 
     for f in foods:
 
         if not f.sliced:
 
-            rotated_image = pygame.transform.rotate(
-                f.image,
-                f.angle
-            )
-
-            rotated_rect = rotated_image.get_rect(
-                center=f.rect.center
-            )
-
+            rotated_image = pygame.transform.rotate(f.image, f.angle)
+            rotated_rect = rotated_image.get_rect(center=f.rect.center)
             screen.blit(rotated_image, rotated_rect)
 
-    # ================= EFFECTS =================
+    # EFFECTS 
     for effect in effects:
         effect.draw(screen)
 
-    # ================= SCORE =================
-    score_text = font.render(
-        f"Score: {score}",
-        True,
-        (255, 0, 0)
-    )
+    # SCORE
+    score_text = font.render(f"Score: {score}", True, (0, 0, 0))
 
     screen.blit(score_img, (100, 5))
     screen.blit(score_text, (120, 15))
 
     # Timer display
-    timer_text = font.render(f"{game_timer_minutes:02.0f}:{game_timer_seconds%60:02.0f}", True, (255, 255, 255))
+    timer_text = font.render(f"{game_timer_minutes:02.0f}:{game_timer_seconds%60:02.0f}", True, (0,0,0))
     screen.blit(timer_text, (screen.get_width() // 2 - timer_text.get_width() // 2, 15))
-
     if health == 0:
+        if game_over_time is None:
+            game_over_time = pygame.time.get_ticks()
+            final_time_record = final_time
 
+        # Display Game Over overlay
+        surface = pygame.Surface((width, height), pygame.SRCALPHA)
+        surface.fill((0, 0, 0, 180))
+        screen.blit(surface, (0, 0))
+        screen.blit(gameover_img, gameover_rect)
+        game_over_score = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 50).render(f"{score}", True, (255, 255, 255))
+        screen.blit(game_over_score, (width // 2 - game_over_score.get_width() // 2 - 190, height // 2 + 75))
+        game_over_time_record = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 50).render(f"{final_time_record}", True, (255, 255, 255))
+        screen.blit(game_over_time_record, (width // 2 - game_over_time_record.get_width() // 2 + 160, height // 2 + 75))
+        
         foods.clear()
 
         screen.blit(damageicon_img, damageicon_rect)
@@ -1041,20 +1508,34 @@ while running:
         if game_over_time is None:
             game_over_time = pygame.time.get_ticks()
 
-        #2seconds before going back to main menu
-        if pygame.time.get_ticks() - game_over_time >= 2000:
-            save_score("John Wayne", score, final_time)
+        #5seconds before going back to main menu
+        if pygame.time.get_ticks() - game_over_time >= 5000:
+            
+            save_score(username_text, score, final_time_record)
             game_timer = 0
             health = 3
-            print("Game Over! Returning to Main Menu...")
-            print(f"Final Time: {final_time}")
-            print(f"Final Score: {score}")
+            score = 0
+            game_over_time = None
+
             main_menu()
 
-        
+    #paused panel when settings cliked
+    if game_settings_open:
+
+        # resume button hover
+        if resume_rect.collidepoint(pygame.mouse.get_pos()):
+            screen.blit(resume_hover_img, resume_rect)
+        else:
+            screen.blit(resume_img, resume_rect)
+
+        # back to menu button hover
+        if BTMM_rect.collidepoint(pygame.mouse.get_pos()):
+            screen.blit(BTMM_hover_img, BTMM_rect)
+        else:
+            screen.blit(BTMM_img, BTMM_rect)
+
     pygame.display.update()
 
-# ================= CLEANUP =================
 cap.release()
 cv2.destroyAllWindows()
 pygame.quit()
