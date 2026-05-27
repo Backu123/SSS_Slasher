@@ -1,4 +1,3 @@
-# ================= IMPORTS =================
 import cv2
 import mediapipe as mp
 from mediapipe.tasks import python
@@ -24,9 +23,8 @@ food_spawn_interval_ms = 900
 gravity = 0.3
 intial_vy_min, intial_vy_max = 12, 18
 
-#Implement swipe longevity here
 #Particle system for swipe longevity or effects
-particle_longevity_ms = 700
+particle_longevity_ms = 500
 
 #max food items on screen at once, to prevent lag
 max_food = 7
@@ -87,7 +85,7 @@ options = vision.HandLandmarkerOptions(
 
 detector = vision.HandLandmarker.create_from_options(options)
 
-# --- CAMERA PERMISSION PROMPT ---
+# Permission request before accessing the camera
 def request_camera_permission():
     root = Tk()
     root.withdraw() # Hides the tiny default blank window
@@ -105,16 +103,13 @@ def request_camera_permission():
 if not request_camera_permission():
     print("Camera permission denied. Exiting game.")
     import sys
-    sys.exit() # Gracefully stops the script right here
-# --------------------------------
+    sys.exit()
 
-# If they clicked 'Yes', the code continues and opens the camera safely
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
-# Database
-
+# DATABASE SETUP
 def init_db():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS leaderboards (
@@ -147,7 +142,6 @@ def get_leaderboard():
 
     return cursor.fetchall()
 
-
 # GIF Animation
 def load_gif_frames(path, scale_size=None):
 
@@ -178,7 +172,7 @@ def load_gif_frames(path, scale_size=None):
 
     return frames
 
-final_time_record = "0"
+final_time_record = "0:00"
 
 # GIF Images
 siopao_frames = load_gif_frames("Siopao.gif", (100, 100))
@@ -368,7 +362,7 @@ class Effect:
     def draw(self, screen):
         screen.blit(self.image, self.rect)
 
-#about screen
+# About screen
 def about_screen():
 
     # Load scroll frames
@@ -443,8 +437,7 @@ def about_screen():
     text_font = pygame.font.Font("pixel_operator/PixelOperator.ttf", 24)
     warning_font = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 26)
 
-    #next scroll page button
-    #scroll page navigation
+    #Scroll andnext scroll page button
     nextscrollbttn_img = pygame.image.load("Next.png").convert_alpha()
     nextscrollbttn_img = pygame.transform.scale(nextscrollbttn_img, (50, 50))
 
@@ -462,7 +455,7 @@ def about_screen():
 
     backscrollbttn_rect = backscrollbttn_img.get_rect(center= (600, 670))
 
-    # FIX: initialize current images (IMPORTANT)
+    # initialize current images
     current_next_img = nextscrollbttn_img
     current_back_img = backscrollbttn_img
     current_exit_img = gameexitbttn_img
@@ -584,7 +577,7 @@ def about_screen():
 
         screen.blit(scroll_img, scroll_rect)
 
-        # ================= SHOW TEXT =================
+        # show text 
         if animation_done:
 
             pages_block = pages[current_page]
@@ -634,9 +627,9 @@ def about_screen():
 
 # Training data: [distance_to_center, swipe_speed, fruit_radius]
 X_train = [
-    [5, 30, 20],   # close, fast swipe, medium fruit → hit
-    [25, 10, 15],  # far, slow swipe, small fruit → miss
-    [8, 40, 25],   # close, fast swipe, large fruit → hit
+    [5, 30, 20],   # close, fast swipe, medium fruit - hit
+    [25, 10, 15],  # far, slow swipe, small fruit - miss
+    [8, 40, 25],   # close, fast swipe, large fruit - hit
 ]
 y_train = [1, 0, 1]  # 1 = hit, 0 = miss
 
@@ -750,7 +743,7 @@ def main_menu():
                     show_leaderboard = not show_leaderboard
 
         screen.fill((0, 0, 0))      # optional background color
-        screen.blit(flipped_frame, (0, 0))  # camera FIRST layer
+        screen.blit(flipped_frame, (0, 0))  # camera
         
         #play button hover
         mouse_pos_play = pygame.mouse.get_pos()
@@ -786,14 +779,12 @@ def main_menu():
 
         screen.blit(ldicon_img, ldicon_rect)
         
-        #leaderboard panel display
         # leaderboard panel display
         if show_leaderboard:
 
             screen.blit(leaderboard_img, leaderboard_rect)
             pygame.draw.rect(screen, (0, 200, 0), ldicon_rect, 5)
 
-            # get leaderboard data
             leaderboard_data = get_leaderboard()
 
             entry_font = pygame.font.Font(
@@ -807,27 +798,11 @@ def main_menu():
             for i, entry in enumerate(leaderboard_data):
 
                 username, score, game_time = entry
-
-                rank_text = entry_font.render(
-                    f"{i+1}. {username}",
-                    True,
-                    (0,0,0)
-                )
-
-                score_text = entry_font.render(
-                    f"{score}",
-                    True,
-                    (0,0, 0)
-                )
-
-                time_text = entry_font.render(
-                    f"{game_time}",
-                    True,
-                    (0, 0,0)
-                )
-
+                rank_text = entry_font.render(f"{i+1}. {username}", True, (0,0,0))
+                score_text = entry_font.render(f"{score}", True, (0,0, 0))
+                time_text = entry_font.render(f"{game_time}", True, (0, 0,0))
                 y = start_y + i * 40
-
+                
                 screen.blit(rank_text, (leaderboard_rect.x + 100, y+30))
                 score_x = leaderboard_rect.centerx - score_text.get_width() // 2
                 screen.blit(score_text, (score_x, y + 30))
@@ -879,7 +854,7 @@ danger_timer = 0
 next_danger_time = 30000
 next_score_trigger = 100
 
-# Spawn speeds
+# Spawn speed
 normal_spawn_interval = 250
 danger_spawn_interval = 150
 
@@ -895,12 +870,11 @@ afk_timeout = 7000  # 7 seconds in milliseconds
 game_paused = False
 last_activity_time = pygame.time.get_ticks()
 
-#settings
+# for settings
 game_paused = False
 game_settings_open = False
 is_paused = game_paused or game_settings_open
 
-# Main Menu
 main_menu()
 
 # Main Game Loop
@@ -909,7 +883,6 @@ while running:
     dt = clock.tick(fps)
     current_time = pygame.time.get_ticks()
 
-    # FIX ADDED HERE (ONLY CHANGE)
     is_paused = game_paused or game_settings_open
 
     # Inactivity checker
@@ -921,7 +894,7 @@ while running:
     game_timer_seconds = total_seconds % 60
     final_time = f"{game_timer_minutes:02.0f}:{game_timer_seconds%60:02.0f}"
 
-    # ================= DIFFICULTY TRIGGER =================
+    # DIFFICULTY SCALING
     if not danger_mode:
 
         # Time-based trigger
@@ -967,7 +940,7 @@ while running:
                 game_settings_open = True
                 #game_paused = True
         
-        #settings paused panel aayusin pa 
+        #settings paused panel with buttons
         if event.type == pygame.MOUSEBUTTONDOWN:
 
             if game_settings_open:
@@ -1004,7 +977,7 @@ while running:
     else:
         current_img = settingsbttn_img
 
-    # ================= CAMERA =================
+    #CAMERA 
     frame = cv2.flip(frame, 1)
 
     h, w, _ = frame.shape
@@ -1015,7 +988,7 @@ while running:
 
     result = detector.detect(mp_image)
 
-    # ================= HAND TRACKING =================
+    #HAND TRACKING
     if not is_paused:
         slice_active = False
         left_slice_active = False
@@ -1026,11 +999,11 @@ while running:
             # MediaPipe returns paired lists: landmarks[i] matches handedness[i]
             for i, hand_landmarks in enumerate(result.hand_landmarks):
             
-                # --- Hand Identification ---
+                # Hand Identification
                 # handedness[i][0] contains the highest probability label (e.g., 'Left', 'Right')
                 hand_label = result.handedness[i][0].category_name
             
-                # --- Geometry & Area Calculation ---
+                # Geometry & Area Calculation
                 xs = [lm.x for lm in hand_landmarks]
                 ys = [lm.y for lm in hand_landmarks]
 
@@ -1054,7 +1027,7 @@ while running:
 
                         if prev_left_tip is not None:
                             dist = math.hypot(x - prev_left_tip[0], y - prev_left_tip[1])
-                            swipe_speed = math.hypot(x - prev_left_tip[0], y - prev_left_tip[1])  # use LEFT tip
+                            swipe_speed = math.hypot(x - prev_left_tip[0], y - prev_left_tip[1])
                             if dist >= min_distance and len(left_trail_points) >= 3:
                                 left_slice_active = True
                         prev_left_tip = (x, y)
@@ -1067,7 +1040,7 @@ while running:
 
                         if prev_right_tip is not None:
                             dist = math.hypot(x - prev_right_tip[0], y - prev_right_tip[1])
-                            swipe_speed = math.hypot(x - prev_right_tip[0], y - prev_right_tip[1])  # use RIGHT tip
+                            swipe_speed = math.hypot(x - prev_right_tip[0], y - prev_right_tip[1])
                             if dist >= min_distance and len(right_trail_points) >= 3:
                                 right_slice_active = True
                         prev_right_tip = (x, y)
@@ -1100,8 +1073,7 @@ while running:
     if current_right_tip is not None:
         prev_right_tip = current_right_tip
 
-    # ================= SLICING LOGIC =================
-
+    # SLICING LOGIC
     def check_slice_path(trail_points):
         global health, score, effects, foods
 
@@ -1123,9 +1095,7 @@ while running:
 
             hit_any = False
             for f in foods:
-                if not f.sliced and segment_circle_intersection(
-                    p1, p2, (f.x, f.y), f.radius + 25
-                ):
+                if not f.sliced and segment_circle_intersection(p1, p2, (f.x, f.y), f.radius + 25):
                     f.sliced = True
                     hit_any = True
 
@@ -1154,11 +1124,11 @@ while running:
     if right_slice_active:
         check_slice_path(right_trail_points)
 
-    #======= Display if the game is paused due to inactivity ========
+    # Display if the game is paused due to inactivity
     if game_paused:
         game_settings_open = True
     
-    # ================= CURRENT DIFFICULTY =================
+    # DIFFICULTY UPDATES TO CURRENT
     if danger_mode:
         current_spawn_interval = danger_spawn_interval
         chili_limit = danger_chili_limit
@@ -1166,42 +1136,34 @@ while running:
         current_spawn_interval = normal_spawn_interval
         chili_limit = normal_chili_limit
 
-    # ================= FOOD SPAWN =================
+    # FOOD SPAWN 
     spawn_timer += dt
 
     if not is_paused:
         game_timer += dt
 
     if not is_paused and health != 0 and spawn_timer >= current_spawn_interval and len(foods) < 5:
-
         if len(foods) <= max_food:
-
             rand = random.randint(1, 20)
 
             if rand <= 5:
                 foods.append(Food(siopao_frames, "siopao"))
-
             elif rand <= 10:
                 foods.append(Food(siomai_frames, "siomai"))
-
             elif rand <= 20 - chili_limit:
                 foods.append(Food(suman_frames, "suman"))
-
             else:
                 foods.append(Food(chili_frames, "chili"))
 
         spawn_timer = 0
 
-    # ================= FOOD UPDATE =================
+    # FOOD UPDATE 
     if not game_paused:
         for food in foods[:]:
             food.update()
 
     # Remove foods that fell off screen
-    foods = [
-        f for f in foods
-        if not f.sliced and f.y < height + 100
-    ]
+    foods = [f for f in foods if not f.sliced and f.y < height + 100]
 
     foods = [
         food for food in foods
@@ -1213,16 +1175,12 @@ while running:
         ).colliderect(ground_rect)
     ]
 
-    # ================= CONVERT FRAME =================
+    # CONVERT FRAME 
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-    frame = pygame.surfarray.make_surface(
-        frame.swapaxes(0, 1)
-    )
-
+    frame = pygame.surfarray.make_surface(frame.swapaxes(0, 1))
     frame = pygame.transform.scale(frame, (width, height))
 
-    # ================= DRAW =================
+    # DRAW 
     screen.blit(frame, (0, 0))
 
     #DISPLAY ITO para sa difficulty mode
@@ -1243,11 +1201,11 @@ while running:
         # draw main text
         screen.blit(warning_text, (x, y))
 
-    # =================== PAUSE OVERLAY =================
+    # PAUSE OVERLAY 
     if game_settings_open:
         screen.blit(paused_img, paused_rect)
 
-    # ================= TRAIL DRAW =================
+    # TRAIL DRAW 
     def draw_trails(trail_data, color):
         if len(trail_data) > 1:
             trail_surface = pygame.Surface((width, height), pygame.SRCALPHA)
@@ -1260,10 +1218,7 @@ while running:
                 alpha = int(255 * life_ratio)
                 thickness = max(1, int(13 * life_ratio))
                 
-                pygame.draw.line(
-                    trail_surface,
-                    (*color, alpha), p1, p2, thickness
-                )
+                pygame.draw.line(trail_surface, (*color, alpha), p1, p2, thickness)
             screen.blit(trail_surface, (0, 0))
 
     # Left Trail (Cyan)
@@ -1272,11 +1227,10 @@ while running:
     # Right Trail (Orange)
     draw_trails(right_trail_points, (255, 140, 0))
 
-    # ================= BUTTON =================
+    # BUTTON
     screen.blit(current_img, settingsbttn_rect)
-    #pygame.draw.rect(screen, (255, 0, 0), settingsbttn_rect, 2)
 
-    # ================= HEALTH DISPLAY =================
+    # HEALTH DISPLAY 
     if health == 3:
         screen.blit(healthicon_img, healthicon_rect)
         screen.blit(healthicon1_img, healthicon1_rect)
@@ -1295,32 +1249,21 @@ while running:
     #draw ground
     pygame.draw.rect(screen, (0, 200, 0), ground_rect)
 
-    # ================= DRAW FOOD =================
+    # DRAW FOOD 
     for f in foods:
 
         if not f.sliced:
 
-            rotated_image = pygame.transform.rotate(
-                f.image,
-                f.angle
-            )
-
-            rotated_rect = rotated_image.get_rect(
-                center=f.rect.center
-            )
-
+            rotated_image = pygame.transform.rotate(f.image, f.angle)
+            rotated_rect = rotated_image.get_rect(center=f.rect.center)
             screen.blit(rotated_image, rotated_rect)
 
-    # ================= EFFECTS =================
+    # EFFECTS 
     for effect in effects:
         effect.draw(screen)
 
-    # ================= SCORE =================
-    score_text = font.render(
-        f"Score: {score}",
-        True,
-        (0, 0, 0)
-    )
+    # SCORE
+    score_text = font.render(f"Score: {score}", True, (0, 0, 0))
 
     screen.blit(score_img, (100, 5))
     screen.blit(score_text, (120, 15))
@@ -1361,7 +1304,7 @@ while running:
             health = 3
             score = 0
             game_over_time = None
-            # print(get_leaderboard())
+
             main_menu()
 
     #paused panel when settings cliked
@@ -1381,7 +1324,6 @@ while running:
 
     pygame.display.update()
 
-# ================= CLEANUP =================
 cap.release()
 cv2.destroyAllWindows()
 pygame.quit()
