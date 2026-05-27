@@ -919,6 +919,11 @@ def flash():
 
 username_text = ""
 
+# for settings
+game_paused = False
+game_settings_open = False
+is_paused = game_paused or game_settings_open
+
 # display username input textbox
 def get_username():
 
@@ -992,8 +997,11 @@ def get_username():
 
                 # Confirm button
                 if confirm_rect.collidepoint(event.pos):
+                    game_settings_open = False
+
                     if username_text.strip() != "":
                         return username_text.strip()
+                        
 
             # Keyboard input
             if event.type == pygame.KEYDOWN and active:
@@ -1079,11 +1087,6 @@ danger_chili_limit = 8
 afk_timeout = 7000  # 7 seconds in milliseconds
 game_paused = False
 last_activity_time = pygame.time.get_ticks()
-
-# for settings
-game_paused = False
-game_settings_open = False
-is_paused = game_paused or game_settings_open
 
 main_menu()
 # Main Game Loop
