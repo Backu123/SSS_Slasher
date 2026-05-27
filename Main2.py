@@ -104,37 +104,111 @@ cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
 # DATABASE SETUP
 def init_db():
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS leaderboards (
-            id SERIAL PRIMARY KEY,
-            username TEXT,
-            score INT,
-            game_time TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    conn.commit()
 
-init_db()
+    global conn, cursor
 
+    try:
+
+        # reconnect if connection is closed
+        if conn.closed != 0:
+            conn = psycopg2.connect(DB_URL)
+            conn.autocommit = True
+            cursor = conn.cursor()
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS leaderboards (
+                id SERIAL PRIMARY KEY,
+                username TEXT,
+                score INT,
+                game_time TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        conn.commit()
+
+        print("Database initialized successfully.")
+
+    except Exception as e:
+        print("Database Initialization Error:", e)
+
+
+# SAVE SCORE FUNCTION
 def save_score(username, score, game_time):
-    cursor.execute("""
-        INSERT INTO leaderboards (username, score, game_time)
-        VALUES (%s, %s, %s)
-    """, (username, score, game_time))
 
-    conn.commit()
+    global conn, cursor
 
+    try:
+
+        # reconnect if connection closed
+        if conn.closed != 0:
+
+            conn = psycopg2.connect(DB_URL)
+            conn.autocommit = True
+            cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO leaderboards (username, score, game_time)
+            VALUES (%s, %s, %s)
+        """, (username, score, game_time))
+
+        conn.commit()
+
+        print("Score saved successfully.")
+
+    except Exception as e:
+
+        print("Database Save Error:", e)
+
+        # reconnect attempt
+        try:
+
+            conn = psycopg2.connect(DB_URL)
+            conn.autocommit = True
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                INSERT INTO leaderboards (username, score, game_time)
+                VALUES (%s, %s, %s)
+            """, (username, score, game_time))
+
+            conn.commit()
+
+            print("Reconnected and score saved.")
+
+        except Exception as reconnect_error:
+            print("Reconnect failed:", reconnect_error)
+
+
+# GET LEADERBOARD FUNCTION
 def get_leaderboard():
-    cursor.execute("""
-        SELECT username, score, game_time
-        FROM leaderboards
-        ORDER BY score DESC, created_at ASC
-        LIMIT 10
-    """)
 
-    return cursor.fetchall()
+    global conn, cursor
 
+    try:
+
+        # reconnect if connection closed
+        if conn.closed != 0:
+
+            conn = psycopg2.connect(DB_URL)
+            conn.autocommit = True
+            cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT username, score, game_time
+            FROM leaderboards
+            ORDER BY score DESC, created_at ASC
+            LIMIT 10
+        """)
+
+        return cursor.fetchall()
+
+    except Exception as e:
+
+        print("Leaderboard Fetch Error:", e)
+
+        return []
+    
 # GIF Animation
 def load_gif_frames(path, scale_size=None):
 
@@ -644,7 +718,6 @@ def knn_predict(X_train, y_train, new_point, k=3):
 
 def main_menu():
     screen = pygame.display.set_mode((width, height))
-    font = pygame.font.SysFont("Arial", 25)
 
     button_size = 200, 40
 
@@ -662,15 +735,15 @@ def main_menu():
     #leaderboards labels
     namelb_img = pygame.image.load("NAME.png")
     namelb_img = pygame.transform.scale(namelb_img, (48, 24))
-    namelb_rect = namelb_img.get_rect(topright = (973, 230))
+    namelb_rect = namelb_img.get_rect(topright = (973, 210))
 
     scorelb_img = pygame.image.load("SCORELB.png")
     scorelb_img = pygame.transform.scale(scorelb_img, (48, 24))
-    scorelb_rect = scorelb_img.get_rect(topright = (1075, 230))
+    scorelb_rect = scorelb_img.get_rect(topright = (1075, 210))
 
     timelb_img = pygame.image.load("TIME.png")
     timelb_img = pygame.transform.scale(timelb_img, (48, 24))
-    timelb_rect = timelb_img.get_rect(topright = (1142, 230))
+    timelb_rect = timelb_img.get_rect(topright = (1142, 210))
 
     #game name logo
     namelogo_img= pygame.image.load("NameLogo.png")
@@ -739,6 +812,8 @@ def main_menu():
                     next_danger_time = 30000
                     next_score_trigger = 100
 
+                    get_username()
+
                     return
 
                 elif aboutbttn_rect.collidepoint(pygame.mouse.get_pos()):
@@ -795,11 +870,11 @@ def main_menu():
             leaderboard_data = get_leaderboard()
 
             entry_font = pygame.font.Font(
-                "pixel_operator/PixelOperator.ttf", 24
+                "pixel_operator/PixelOperator.ttf", 20
             )
 
             # starting y-position
-            start_y = leaderboard_rect.y + 100
+            start_y = leaderboard_rect.y + 120
 
             # display leaderboard entries
             for i, entry in enumerate(leaderboard_data):
@@ -810,10 +885,10 @@ def main_menu():
                 time_text = entry_font.render(f"{game_time}", True, (0, 0,0))
                 y = start_y + i * 40
 
-                screen.blit(rank_text, (leaderboard_rect.x + 120, y+50))
+                screen.blit(rank_text, (leaderboard_rect.x + 120, y+15))
                 score_x = leaderboard_rect.centerx - score_text.get_width() // 2 + 10
-                screen.blit(score_text, (score_x, y + 50))
-                screen.blit(time_text, (leaderboard_rect.x + 320, y+50))
+                screen.blit(score_text, (score_x, y + 15))
+                screen.blit(time_text, (leaderboard_rect.x + 320, y+15))
                 
                 screen.blit(namelb_img, namelb_rect)
                 screen.blit(scorelb_img, scorelb_rect)
@@ -841,6 +916,131 @@ def flash():
         screen.blit(surface, (0, 0))
         pygame.display.update()
         clock.tick(60)
+
+username_text = ""
+
+# display username input textbox
+def get_username():
+
+    global username_text
+
+    input_box = pygame.Rect(width // 2 - 100, height // 2, 200, 40)
+
+    color_inactive = pygame.Color('lightskyblue3')
+    color_active = pygame.Color('dodgerblue2')
+    color = color_inactive
+
+    active = False
+
+    font = pygame.font.Font("pixel_operator/PixelOperator.ttf", 24)
+
+    username_img = pygame.image.load("Username.png").convert_alpha()
+    username_img = pygame.transform.scale(username_img, (500, 300))
+    username_rect = username_img.get_rect(center=(width // 2, height // 2))
+
+    confirm_img = pygame.image.load("Play1.png").convert_alpha()
+    confirm_img = pygame.transform.scale(confirm_img, (160, 50))
+
+    confirm_hover_img = pygame.image.load("Play.png").convert_alpha()
+    confirm_hover_img = pygame.transform.scale(confirm_hover_img, (160, 50))
+
+    confirm_rect = confirm_img.get_rect(
+        center=(width // 2, height // 2 + 90)
+    )
+
+    while True:
+
+        clock.tick(60)
+
+        success, frame = cap.read()
+
+        if not success:
+            continue
+
+        # Camera background
+        frame = cv2.flip(frame, 1)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        frame = pygame.surfarray.make_surface(frame.swapaxes(0, 1))
+        frame = pygame.transform.scale(frame, (width, height))
+
+        screen.blit(frame, (0, 0))
+
+        # Dark overlay
+        overlay = pygame.Surface((width, height))
+        overlay.set_alpha(150)
+        overlay.fill((0, 0, 0))
+
+        screen.blit(overlay, (0, 0))
+
+        # Username panel
+        screen.blit(username_img, username_rect)
+
+        for event in pygame.event.get():
+
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+
+            # Mouse click
+            if event.type == pygame.MOUSEBUTTONDOWN and username_text != "":
+
+                # Activate textbox
+                active = input_box.collidepoint(event.pos)
+
+                color = color_active if active else color_inactive
+
+                # Confirm button
+                if confirm_rect.collidepoint(event.pos) :
+
+                    if username_text.strip() != "":
+                        return username_text.strip()
+
+            # Keyboard input
+            if event.type == pygame.KEYDOWN and active:
+
+                # Enter key
+                if event.key == pygame.K_RETURN:
+
+                    if username_text.strip() != "":
+                        return username_text.strip()
+
+                # Backspace
+                elif event.key == pygame.K_BACKSPACE:
+                    username_text = username_text[:-1]
+
+                # Typing
+                else:
+
+                    # Limit username length
+                    if len(username_text) < 12:
+
+                        # Allow only letters, numbers, underscore
+                        if event.unicode.isalnum() or event.unicode == "_":
+                            username_text += event.unicode
+
+        # Draw input box
+        pygame.draw.rect(screen, color, input_box, 3)
+
+        # Render username text
+        txt_surface = font.render(
+            username_text,
+            True,
+            (0,0,0)
+        )
+
+        screen.blit(
+            txt_surface,
+            (input_box.x + 10, input_box.y + 8)
+        )
+
+        # Confirm button hover
+        if confirm_rect.collidepoint(pygame.mouse.get_pos()):
+            screen.blit(confirm_hover_img, confirm_rect)
+        else:
+            screen.blit(confirm_img, confirm_rect)
+
+        pygame.display.update()
 
 # Main Game Variables
 running = True
@@ -887,7 +1087,6 @@ game_settings_open = False
 is_paused = game_paused or game_settings_open
 
 main_menu()
-
 # Main Game Loop
 while running:
 
@@ -1310,7 +1509,7 @@ while running:
         #5seconds before going back to main menu
         if pygame.time.get_ticks() - game_over_time >= 5000:
             
-            save_score("JaBaithon", score, final_time_record)
+            save_score(username_text, score, final_time_record)
             game_timer = 0
             health = 3
             score = 0
