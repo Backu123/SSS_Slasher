@@ -139,7 +139,7 @@ def save_score(username, score, game_time):
 
 def get_leaderboard():
     cursor.execute("""
-        SELECT username, score, game_time, created_at
+        SELECT username, score, game_time
         FROM leaderboards
         ORDER BY score DESC, created_at ASC
         LIMIT 10
@@ -177,6 +177,8 @@ def load_gif_frames(path, scale_size=None):
         pass
 
     return frames
+
+final_time_record = "0"
 
 # GIF Images
 siopao_frames = load_gif_frames("Siopao.gif", (100, 100))
@@ -785,9 +787,51 @@ def main_menu():
         screen.blit(ldicon_img, ldicon_rect)
         
         #leaderboard panel display
+        # leaderboard panel display
         if show_leaderboard:
+
             screen.blit(leaderboard_img, leaderboard_rect)
             pygame.draw.rect(screen, (0, 200, 0), ldicon_rect, 5)
+
+            # get leaderboard data
+            leaderboard_data = get_leaderboard()
+
+            entry_font = pygame.font.Font(
+                "pixel_operator/PixelOperator.ttf", 24
+            )
+
+            # starting y-position
+            start_y = leaderboard_rect.y + 100
+
+            # display leaderboard entries
+            for i, entry in enumerate(leaderboard_data):
+
+                username, score, game_time = entry
+
+                rank_text = entry_font.render(
+                    f"{i+1}. {username}",
+                    True,
+                    (0,0,0)
+                )
+
+                score_text = entry_font.render(
+                    f"{score}",
+                    True,
+                    (0,0, 0)
+                )
+
+                time_text = entry_font.render(
+                    f"{game_time}",
+                    True,
+                    (0, 0,0)
+                )
+
+                y = start_y + i * 40
+
+                screen.blit(rank_text, (leaderboard_rect.x + 100, y+30))
+                score_x = leaderboard_rect.centerx - score_text.get_width() // 2
+                screen.blit(score_text, (score_x, y + 30))
+                screen.blit(time_text, (leaderboard_rect.x + 320, y+30))
 
         pygame.display.update()
 
@@ -1284,16 +1328,21 @@ while running:
     # Timer display
     timer_text = font.render(f"{game_timer_minutes:02.0f}:{game_timer_seconds%60:02.0f}", True, (0,0,0))
     screen.blit(timer_text, (screen.get_width() // 2 - timer_text.get_width() // 2, 15))
-
     if health == 0:
+        if game_over_time is None:
+            game_over_time = pygame.time.get_ticks()
+            final_time_record = final_time
+
         # Display Game Over overlay
         surface = pygame.Surface((width, height), pygame.SRCALPHA)
         surface.fill((0, 0, 0, 180))
         screen.blit(surface, (0, 0))
         screen.blit(gameover_img, gameover_rect)
-        game_over_score = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 50).render(f"Score: {score}", True, (255, 255, 255))
-        screen.blit(game_over_score, (width // 2 - game_over_score.get_width() // 2, height // 2 + 25))
-
+        game_over_score = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 50).render(f"{score}", True, (255, 255, 255))
+        screen.blit(game_over_score, (width // 2 - game_over_score.get_width() // 2 - 190, height // 2 + 75))
+        game_over_time_record = pygame.font.Font("pixel_operator/PixelOperator-Bold.ttf", 50).render(f"{final_time_record}", True, (255, 255, 255))
+        screen.blit(game_over_time_record, (width // 2 - game_over_time_record.get_width() // 2 + 160, height // 2 + 75))
+        
         foods.clear()
 
         screen.blit(damageicon_img, damageicon_rect)
@@ -1307,14 +1356,12 @@ while running:
         #2seconds before going back to main menu
         if pygame.time.get_ticks() - game_over_time >= 2000:
             
-            save_score("Leilanie", score, final_time)
+            save_score("JaBaithon", score, final_time_record)
             game_timer = 0
             health = 3
             score = 0
             game_over_time = None
-            print("Game Over! Returning to Main Menu...")
-            print(f"Final Time: {final_time}")
-            print(f"Final Score: {score}")
+            # print(get_leaderboard())
             main_menu()
 
     #paused panel when settings cliked
