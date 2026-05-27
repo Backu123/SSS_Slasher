@@ -250,7 +250,7 @@ resume_img = pygame.transform.scale(resume_img, (200, 60))
 resume_hover_img = pygame.image.load("Resume1.png").convert_alpha()
 resume_hover_img = pygame.transform.scale(resume_hover_img, (200, 60))
 
-resume_rect = resume_img.get_rect(center=(width // 2- 100, height // 2 + 100))
+resume_rect = resume_img.get_rect(center=(width // 2 - 150, height // 2 + 100))
 
 #Back to main menu
 BTMM_img = pygame.image.load("BTMM.png").convert_alpha()
@@ -259,7 +259,7 @@ BTMM_img = pygame.transform.scale(BTMM_img, (200, 60))
 BTMM_hover_img = pygame.image.load("BTMM1.png").convert_alpha()
 BTMM_hover_img = pygame.transform.scale(BTMM_hover_img, (200, 60))
 
-BTMM_rect = BTMM_img.get_rect(center=(width // 2 + 100, height // 2 + 100))
+BTMM_rect = BTMM_img.get_rect(center=(width // 2 + 150, height // 2 + 100))
 
 # Food Class
 class Food:
@@ -673,6 +673,20 @@ def main_menu():
     leaderboard_img = pygame.transform.scale(leaderboard_img, (500, 560))
     leaderboard_rect = leaderboard_img.get_rect(topright = (width, 100))
 
+    #leaderboards labels
+    namelb_img = pygame.image.load("NAME.png")
+    namelb_img = pygame.transform.scale(namelb_img, (48, 24))
+    namelb_rect = namelb_img.get_rect(topright = (973, 230))
+
+    scorelb_img = pygame.image.load("SCORELB.png")
+    scorelb_img = pygame.transform.scale(scorelb_img, (48, 24))
+    scorelb_rect = scorelb_img.get_rect(topright = (1075, 230))
+
+    timelb_img = pygame.image.load("TIME.png")
+    timelb_img = pygame.transform.scale(timelb_img, (48, 24))
+    timelb_rect = timelb_img.get_rect(topright = (1142, 230))
+
+    #game name logo
     namelogo_img= pygame.image.load("NameLogo.png")
     namelogo_img= pygame.transform.scale(namelogo_img, (400, 360))
     namelogo_rect = namelogo_img.get_rect(center = (640, 170))
@@ -817,10 +831,14 @@ def main_menu():
 
                 y = start_y + i * 40
 
-                screen.blit(rank_text, (leaderboard_rect.x + 100, y+30))
-                score_x = leaderboard_rect.centerx - score_text.get_width() // 2
-                screen.blit(score_text, (score_x, y + 30))
-                screen.blit(time_text, (leaderboard_rect.x + 320, y+30))
+                screen.blit(rank_text, (leaderboard_rect.x + 120, y+50))
+                score_x = leaderboard_rect.centerx - score_text.get_width() // 2 + 10
+                screen.blit(score_text, (score_x, y + 50))
+                screen.blit(time_text, (leaderboard_rect.x + 320, y+50))
+                
+                screen.blit(namelb_img, namelb_rect)
+                screen.blit(scorelb_img, scorelb_rect)
+                screen.blit(timelb_img, timelb_rect)
 
         pygame.display.update()
 
