@@ -40,6 +40,7 @@ health = 3
 game_timer = 0
 game_over_time = None
 score = 0
+game_start_requested = False
 
 #score background
 score_img = pygame.image.load("Points, Time.png")
@@ -795,24 +796,11 @@ def main_menu():
                 if playbttn_rect.collidepoint(pygame.mouse.get_pos()):
 
                     global game_paused, game_settings_open
-                    global last_activity_time, game_timer
-                    global danger_timer, danger_mode
-                    global next_danger_time, next_score_trigger
+                    global username_text, game_start_requested
 
-                    game_paused = False
-                    game_settings_open = False
-                    last_activity_time = pygame.time.get_ticks()
-
-                    # Reset timers
-                    game_timer = 0
-                    danger_timer = 0
-
-                    # Reset danger mode
-                    danger_mode = False
-                    next_danger_time = 30000
-                    next_score_trigger = 100
-
-                    get_username()
+                    # Ask for username, then request game start initialization
+                    username_text = get_username()
+                    game_start_requested = True
 
                     return
 
@@ -928,8 +916,10 @@ is_paused = game_paused or game_settings_open
 def get_username():
 
     global username_text
-
+    global game_settings_open
+    global game_paused
     input_box = pygame.Rect(width // 2 - 100, height // 2, 200, 40)
+
 
     color_inactive = pygame.Color('lightskyblue3')
     color_active = pygame.Color('dodgerblue2')
@@ -997,11 +987,13 @@ def get_username():
 
                 # Confirm button
                 if confirm_rect.collidepoint(event.pos):
-                    game_settings_open = False
 
                     if username_text.strip() != "":
+
+                        game_settings_open = False
+                        game_paused = False
+
                         return username_text.strip()
-                        
 
             # Keyboard input
             if event.type == pygame.KEYDOWN and active:
@@ -1010,6 +1002,10 @@ def get_username():
                 if event.key == pygame.K_RETURN:
 
                     if username_text.strip() != "":
+
+                        game_settings_open = False
+                        game_paused = False
+
                         return username_text.strip()
 
                 # Backspace
@@ -1033,7 +1029,7 @@ def get_username():
         txt_surface = font.render(
             username_text,
             True,
-            (0,0,0)
+            (0, 0, 0)
         )
 
         screen.blit(
@@ -1048,7 +1044,6 @@ def get_username():
             screen.blit(confirm_img, confirm_rect)
 
         pygame.display.update()
-
 # Main Game Variables
 running = True
 
@@ -1096,6 +1091,19 @@ while running:
     current_time = pygame.time.get_ticks()
 
     is_paused = game_paused or game_settings_open
+
+    # Initialize game start requested from main_menu: start timer here
+    if game_start_requested:
+        game_start_requested = False
+        game_paused = False
+        game_settings_open = False
+        last_activity_time = pygame.time.get_ticks()
+        # Reset timers and danger state when the main loop actually starts
+        game_timer = 0
+        danger_timer = 0
+        danger_mode = False
+        next_danger_time = 30000
+        next_score_trigger = 100
 
     # Inactivity checker
     if not game_paused and current_time - last_activity_time >= afk_timeout:
@@ -1170,6 +1178,7 @@ while running:
                     score = 0
                     game_timer = 0
                     game_over_time = None
+                    username_text = ""
 
                     left_trail_points.clear()
                     right_trail_points.clear()
@@ -1516,6 +1525,7 @@ while running:
             health = 3
             score = 0
             game_over_time = None
+            username_text = ""
 
             main_menu()
 
